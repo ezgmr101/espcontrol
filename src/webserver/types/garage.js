@@ -90,27 +90,36 @@ registerButtonType("garage", {
       renderButtonSettings();
     });
 
-    panel.appendChild(helpers.textField(
+    var labelControl = helpers.textField(
       "Label", helpers.idPrefix + "label", b.label,
       garageCommandMode(mode) ? "e.g. " + garageModeDefaultLabel(mode) + " Garage" : "e.g. Garage Door",
-      "label", true).field);
+      "label", true);
 
     if (!garageCommandMode(mode)) {
       function setActive(buttons, value) {
         for (var key in buttons) buttons[key].classList.toggle("active", key === value);
       }
 
+      function setLabelVisible(value) {
+        labelControl.field.style.display = value === "label" ? "" : "none";
+      }
+
+      var labelMode = garageLabelDisplayMode(b);
       var labelDisplayField = helpers.segmentControl([
         ["label", "Label"],
         ["status", "Status"],
-      ], garageLabelDisplayMode(b), function (value) {
+      ], labelMode, function (value) {
         setActive(labelDisplayField.buttons, value);
         setGarageLabelDisplayMode(b, value);
         helpers.saveField("options", b.options);
+        setLabelVisible(value);
         scheduleRender();
       });
       panel.appendChild(helpers.fieldWithControl("Label Display", null, labelDisplayField.segment));
+      setLabelVisible(labelMode);
     }
+
+    panel.appendChild(labelControl.field);
 
     function iconField(label, inputSuffix, field, currentVal, defaultVal) {
       return helpers.iconPickerField(
