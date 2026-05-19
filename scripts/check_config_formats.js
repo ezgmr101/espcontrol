@@ -337,6 +337,20 @@ assertButtonRoundTrip(hooks, "garage label button", {
   precision: "",
 }, false);
 
+const garageStatusCard = {
+  entity: "cover.garage",
+  label: "Garage Door",
+  icon: "Garage",
+  icon_on: "Garage Open",
+  sensor: "",
+  unit: "",
+  type: "garage",
+  precision: "",
+  options: "label_display=status",
+};
+assertButtonRoundTrip(hooks, "garage status button", garageStatusCard, false);
+assert.strictEqual(hooks.garageLabelDisplayMode(garageStatusCard), "status", "garage status display option");
+
 assertButtonRoundTrip(hooks, "garage open command button", {
   entity: "cover.garage",
   label: "Open",
@@ -347,6 +361,18 @@ assertButtonRoundTrip(hooks, "garage open command button", {
   type: "garage",
   precision: "",
 }, false);
+
+assertButtonMigration(hooks, "garage command clears status display", "cover.garage;Open;Garage Open;Auto;open;;garage;;label_display=status", {
+  entity: "cover.garage",
+  label: "Open",
+  icon: "Garage Open",
+  icon_on: "Auto",
+  sensor: "open",
+  unit: "",
+  type: "garage",
+  precision: "",
+  options: "",
+});
 
 assertButtonRoundTrip(hooks, "garage close command button", {
   entity: "cover.garage",
@@ -1343,6 +1369,13 @@ assertSubpageRoundTrip(hooks, "garage command subpage", {
   buttons: [
     buttonShape({ entity: "cover.garage", label: "Open", icon: "Garage Open", icon_on: "Auto", sensor: "open", type: "garage" }),
     buttonShape({ entity: "cover.garage", label: "Close", icon: "Garage", icon_on: "Auto", sensor: "close", type: "garage" }),
+  ],
+}, true);
+
+assertSubpageRoundTrip(hooks, "garage status subpage", {
+  order: ["1", "B"],
+  buttons: [
+    buttonShape({ entity: "cover.garage", label: "Garage Door", icon: "Garage", icon_on: "Garage Open", type: "garage", options: "label_display=status" }),
   ],
 }, true);
 

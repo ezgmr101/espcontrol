@@ -32,6 +32,7 @@ registerButtonType("garage", {
     b.precision = "";
     b.icon = "Garage";
     b.icon_on = "Garage Open";
+    b.options = "";
   },
   renderSettings: function (panel, b, slot, helpers) {
     var mode = normalizeGarageMode(b.sensor);
@@ -41,6 +42,11 @@ registerButtonType("garage", {
     }
     b.unit = "";
     b.precision = "";
+    var normalizedOptions = normalizeGarageOptions(b.options, mode);
+    if (b.options !== normalizedOptions) {
+      b.options = normalizedOptions;
+      helpers.saveField("options", normalizedOptions);
+    }
     if (garageCommandMode(mode) && b.icon_on !== "Auto") {
       b.icon_on = "Auto";
       helpers.saveField("icon_on", "Auto");
@@ -69,6 +75,8 @@ registerButtonType("garage", {
       b.precision = "";
       helpers.saveField("unit", "");
       helpers.saveField("precision", "");
+      b.options = normalizeGarageOptions(b.options, mode);
+      helpers.saveField("options", b.options);
       if (hadDefaultIcon || b.icon === garageModeDefaultIcon(oldMode)) {
         b.icon = garageModeDefaultIcon(mode);
         helpers.saveField("icon", b.icon);
@@ -86,6 +94,23 @@ registerButtonType("garage", {
       "Label", helpers.idPrefix + "label", b.label,
       garageCommandMode(mode) ? "e.g. " + garageModeDefaultLabel(mode) + " Garage" : "e.g. Garage Door",
       "label", true).field);
+
+    if (!garageCommandMode(mode)) {
+      function setActive(buttons, value) {
+        for (var key in buttons) buttons[key].classList.toggle("active", key === value);
+      }
+
+      var labelDisplayField = helpers.segmentControl([
+        ["label", "Label"],
+        ["status", "Status"],
+      ], garageLabelDisplayMode(b), function (value) {
+        setActive(labelDisplayField.buttons, value);
+        setGarageLabelDisplayMode(b, value);
+        helpers.saveField("options", b.options);
+        scheduleRender();
+      });
+      panel.appendChild(helpers.fieldWithControl("Label Display", null, labelDisplayField.segment));
+    }
 
     function iconField(label, inputSuffix, field, currentVal, defaultVal) {
       return helpers.iconPickerField(
@@ -118,6 +143,7 @@ registerButtonType("garage", {
     var mode = normalizeGarageMode(b.sensor);
     var iconName = b.icon && b.icon !== "Auto" ? iconSlug(b.icon) : iconSlug(garageModeDefaultIcon(mode));
     var label = b.label || (garageCommandMode(mode) ? garageModeDefaultLabel(mode) : b.entity || "Garage Door");
+    if (!garageCommandMode(mode) && garageLabelDisplayMode(b) === "status") label = "Closed";
     return {
       iconHtml: '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>',
       labelHtml:

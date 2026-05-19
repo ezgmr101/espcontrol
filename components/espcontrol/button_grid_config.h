@@ -178,6 +178,18 @@ inline std::string climate_card_options_normalized(const std::string &options) {
   return out;
 }
 
+inline std::string normalize_garage_label_display(const std::string &value) {
+  return value == "status" ? "status" : "label";
+}
+
+inline std::string garage_card_options_normalized(const std::string &options,
+                                                  const std::string &sensor) {
+  if (sensor == "open" || sensor == "close") return "";
+  return normalize_garage_label_display(cfg_option_value(options, "label_display")) == "status"
+    ? "label_display=status"
+    : "";
+}
+
 inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   // Slider cards used to store "h" here for horizontal layout. Sliders are
   // now always vertical, so treat any saved slider sensor value as legacy.
@@ -236,6 +248,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.unit.clear();
     p.precision.clear();
     if (!p.sensor.empty()) p.icon_on.clear();
+    p.options = garage_card_options_normalized(p.options, p.sensor);
   }
   if (p.type == "alarm") {
     p.sensor.clear();
@@ -267,7 +280,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.icon_on.clear();
     if (p.icon.empty() || p.icon == "Auto" || p.icon == "Chevron Down") p.icon = "Flash";
   }
-  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "climate" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
+  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "climate" && p.type != "garage" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
     p.options.clear();
   }
   return p;
@@ -827,6 +840,11 @@ inline const char *garage_card_label(const ParsedCfg &p) {
   if (p.sensor == "open") return "Open";
   if (p.sensor == "close") return "Close";
   return "Garage Door";
+}
+
+inline bool garage_card_show_status(const ParsedCfg &p) {
+  return !garage_command_mode(p.sensor) &&
+    normalize_garage_label_display(cfg_option_value(p.options, "label_display")) == "status";
 }
 
 inline const char* lock_locked_icon(const std::string &icon) {

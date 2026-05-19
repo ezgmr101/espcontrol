@@ -453,7 +453,7 @@ inline void setup_garage_card(BtnSlot &s, const ParsedCfg &p) {
     return;
   }
   lv_label_set_text(s.icon_lbl, garage_closed_icon(p.icon));
-  lv_label_set_text(s.text_lbl, garage_card_label(p));
+  lv_label_set_text(s.text_lbl, garage_card_show_status(p) ? "--" : garage_card_label(p));
 }
 
 inline void setup_lock_card(BtnSlot &s, const ParsedCfg &p) {

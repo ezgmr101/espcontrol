@@ -18,8 +18,11 @@ Unlike a **Cover** card, it does not show a slider. It normally shows your label
    - **Open** sends only an open command.
    - **Close** sends only a close command.
 3. Enter an **Entity** — the Home Assistant garage door cover entity, for example `cover.garage_door`.
-4. Choose the icons. Toggle cards use closed and open icons, while Open and Close command cards use a single icon.
-5. Set a **Label** (optional). If left blank, toggle cards use the entity's friendly name from Home Assistant, and command cards show **Open** or **Close**.
+4. Set **Label Display** for toggle cards.
+   - **Label** shows the card label normally, then briefly shows the live door state when it changes.
+   - **Status** keeps the live door state visible on the card.
+5. Choose the icons. Toggle cards use closed and open icons, while Open and Close command cards use a single icon.
+6. Set a **Label** (optional). If left blank, toggle cards use the entity's friendly name from Home Assistant, and command cards show **Open** or **Close**.
 
 ## How It Works on the Panel
 
@@ -27,5 +30,5 @@ Unlike a **Cover** card, it does not show a slider. It normally shows your label
 - In **Open** mode, tapping the card sends `cover.open_cover`.
 - In **Close** mode, tapping the card sends `cover.close_cover`.
 - Toggle cards light up while the door is open, opening, or closing.
-- Toggle cards temporarily show the Home Assistant state, such as **Open**, **Closed**, **Opening**, or **Closing**.
+- Toggle cards can show the Home Assistant state, such as **Open**, **Closed**, **Opening**, or **Closing**, either briefly or all the time depending on **Label Display**.
 - Open and Close command cards briefly flash when tapped. They do not stay highlighted based on the live door state.

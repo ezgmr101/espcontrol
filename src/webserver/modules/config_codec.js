@@ -69,6 +69,7 @@ function normalizeButtonConfig(b) {
     b.unit = "";
     b.precision = "";
     if (b.sensor === "open" || b.sensor === "close") b.icon_on = "Auto";
+    b.options = normalizeGarageOptions(b.options, b.sensor);
   }
   if (b && b.type === "alarm") {
     b.sensor = "";
@@ -103,7 +104,7 @@ function normalizeButtonConfig(b) {
   }
   if (b && !b.type) {
     b.options = normalizeSwitchConfirmationOptions(b.options);
-  } else if (b && b.type !== "action" && b.type !== "alarm" && b.type !== "climate" && !cardLargeNumbersSupported(b)) {
+  } else if (b && b.type !== "action" && b.type !== "alarm" && b.type !== "climate" && b.type !== "garage" && !cardLargeNumbersSupported(b)) {
     b.options = "";
   }
   return b;
@@ -144,6 +145,7 @@ var SWITCH_CONFIRM_DEFAULT_NO = "No";
 var ALARM_PIN_ARM_OPTION = "pin_arm";
 var ALARM_PIN_DISARM_OPTION = "pin_disarm";
 var ALARM_ACTIONS_OPTION = "actions";
+var GARAGE_LABEL_DISPLAY_OPTION = "label_display";
 var CLIMATE_LABEL_DISPLAY_OPTION = "label_display";
 var CLIMATE_NUMBER_DISPLAY_OPTION = "number_display";
 var ALARM_ACTIONS = [
@@ -279,6 +281,37 @@ function setSwitchConfirmationOptions(b, enabled, message, yesText, noText) {
     }
   }
   b.options = out;
+  return b.options;
+}
+
+function normalizeGarageLabelDisplayMode(value) {
+  value = String(value || "").trim();
+  return value === "status" ? "status" : "label";
+}
+
+function normalizeGarageOptions(options, mode) {
+  var labelMode = normalizeGarageLabelDisplayMode(
+    configOptionValue(options, GARAGE_LABEL_DISPLAY_OPTION));
+  if (garageCommandMode(mode)) return "";
+  return labelMode === "status"
+    ? setConfigOptionValue("", GARAGE_LABEL_DISPLAY_OPTION, labelMode)
+    : "";
+}
+
+function garageLabelDisplayMode(b) {
+  if (garageCommandMode(b && b.sensor)) return "label";
+  return normalizeGarageLabelDisplayMode(
+    configOptionValue(b && b.options, GARAGE_LABEL_DISPLAY_OPTION));
+}
+
+function setGarageLabelDisplayMode(b, mode) {
+  if (!b) return "";
+  b.options = setConfigOptionValue(
+    b.options,
+    GARAGE_LABEL_DISPLAY_OPTION,
+    normalizeGarageLabelDisplayMode(mode) === "status" ? "status" : ""
+  );
+  b.options = normalizeGarageOptions(b.options, b.sensor);
   return b.options;
 }
 
@@ -512,11 +545,13 @@ function buttonConfigFields(b) {
     options = normalizeSwitchConfirmationOptions(options);
   } else if (type === "alarm") {
     options = normalizeAlarmOptions(options);
+  } else if (type === "garage") {
+    options = normalizeGarageOptions(options, sensor);
   } else if (type === "climate") {
     options = normalizeClimateOptions(options);
   } else if (isActionOptionSelect || isFanCardType(type)) {
     options = "";
-  } else if (type !== "action" && !cardLargeNumbersSupported({ type: type, precision: precision })) {
+  } else if (type !== "action" && type !== "garage" && !cardLargeNumbersSupported({ type: type, precision: precision })) {
     options = "";
   }
   if (!type && !sensor) {
@@ -834,11 +869,13 @@ function legacySubpageConfigSafe(sp) {
       options = normalizeSwitchConfirmationOptions(options);
     } else if (type === "alarm") {
       options = normalizeAlarmOptions(options);
+    } else if (type === "garage") {
+      options = normalizeGarageOptions(options, sensor);
     } else if (type === "climate") {
       options = normalizeClimateOptions(options);
     } else if (isActionOptionSelect || isFanCardType(type)) {
       options = "";
-    } else if (type !== "action" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
+    } else if (type !== "action" && type !== "garage" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
       options = "";
     }
     var fields = [b.entity || "", b.label || "", icon, iconOn, sensor, unit, type, precision, options];
@@ -876,11 +913,13 @@ function serializeLegacySubpageConfig(sp) {
       options = normalizeSwitchConfirmationOptions(options);
     } else if (type === "alarm") {
       options = normalizeAlarmOptions(options);
+    } else if (type === "garage") {
+      options = normalizeGarageOptions(options, sensor);
     } else if (type === "climate") {
       options = normalizeClimateOptions(options);
     } else if (isActionOptionSelect || isFanCardType(type)) {
       options = "";
-    } else if (type !== "action" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
+    } else if (type !== "action" && type !== "garage" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
       options = "";
     }
     var fields = [b.entity || "", b.label || "", icon, iconOn, sensor, unit, type, precision, options];
@@ -916,11 +955,13 @@ function serializeCompactSubpageConfig(sp) {
       options = normalizeSwitchConfirmationOptions(options);
     } else if (type === "alarm") {
       options = normalizeAlarmOptions(options);
+    } else if (type === "garage") {
+      options = normalizeGarageOptions(options, sensor);
     } else if (type === "climate") {
       options = normalizeClimateOptions(options);
     } else if (isActionOptionSelect || isFanCardType(type)) {
       options = "";
-    } else if (type !== "action" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
+    } else if (type !== "action" && type !== "garage" && !cardLargeNumbersSupported({ type: type || "", precision: precision })) {
       options = "";
     }
     var fields = [

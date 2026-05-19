@@ -117,6 +117,7 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
     b.unit.clear();
     b.precision.clear();
     if (!b.sensor.empty()) b.icon_on.clear();
+    b.options = garage_card_options_normalized(b.options, b.sensor);
   }
   if (b.type == "alarm") {
     b.sensor.clear();
@@ -143,7 +144,7 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
   ParsedCfg p;
   p.type = b.type;
   p.precision = b.precision;
-  if (!b.type.empty() && b.type != "action" && b.type != "alarm" && b.type != "climate" && !fan_card_type(b.type) && !card_large_numbers_supported(p)) {
+  if (!b.type.empty() && b.type != "action" && b.type != "alarm" && b.type != "climate" && b.type != "garage" && !fan_card_type(b.type) && !card_large_numbers_supported(p)) {
     b.options.clear();
   }
   return b;
