@@ -41,6 +41,26 @@ function ensureInternalRelaySelection(b) {
   b.entity = relays[0].key;
 }
 
+function renderInternalRelayField(panel, b, helpers) {
+  ensureInternalRelaySelection(b);
+  var relays = internalRelayOptions();
+  var relayField = helpers.selectField(
+    "Internal Relay",
+    helpers.idPrefix + "internal-relay",
+    relays.length ? relays.map(function (relay) {
+      return { value: relay.key, label: relay.label };
+    }) : [["", "No relays"]],
+    relays.length ? b.entity : ""
+  );
+  var relaySelect = relayField.select;
+  relaySelect.disabled = !relays.length;
+  relaySelect.addEventListener("change", function () {
+    b.entity = this.value;
+    helpers.saveField("entity", b.entity);
+  });
+  panel.appendChild(relayField.field);
+}
+
 registerButtonType("internal", {
   label: "Internal Switches",
   allowInSubpage: true,
@@ -56,30 +76,16 @@ registerButtonType("internal", {
     b.icon = internalRelayDefaultIcon("switch");
     b.icon_on = internalRelayDefaultOnIcon();
   },
+  renderSettingsBeforeLabel: function (panel, b, slot, helpers) {
+    renderInternalRelayField(panel, b, helpers);
+  },
   renderSettings: function (panel, b, slot, helpers) {
     ensureInternalRelaySelection(b);
-    var relays = internalRelayOptions();
     var mode = internalRelayMode(b);
     if (internalRelayUsesDefaultIcon(mode, b.icon)) b.icon = internalRelayDefaultIcon(mode);
     if (mode === "switch" && internalRelayUsesDefaultOnIcon(b.icon_on)) {
       b.icon_on = internalRelayDefaultOnIcon();
     }
-
-    var relayField = helpers.selectField(
-      "Internal Relay",
-      helpers.idPrefix + "internal-relay",
-      relays.length ? relays.map(function (relay) {
-        return { value: relay.key, label: relay.label };
-      }) : [["", "No relays"]],
-      relays.length ? b.entity : ""
-    );
-    var relaySelect = relayField.select;
-    relaySelect.disabled = !relays.length;
-    relaySelect.addEventListener("change", function () {
-      b.entity = this.value;
-      helpers.saveField("entity", b.entity);
-    });
-    panel.appendChild(relayField.field);
 
     var modeControl = helpers.segmentControl([
       ["switch", "Switch"],
