@@ -60,6 +60,7 @@ jobs:
           mkdir -p "${PLATFORMIO_CACHE}" "${BUILD_CACHE}" builds
           rm -rf .esphome
           rm -rf builds/.esphome
+          rm -rf "${BUILD_CACHE}/build"
           echo "PLATFORMIO_CACHE=${PLATFORMIO_CACHE}" >> "$GITHUB_ENV"
           echo "BUILD_CACHE=${BUILD_CACHE}" >> "$GITHUB_ENV"
 
