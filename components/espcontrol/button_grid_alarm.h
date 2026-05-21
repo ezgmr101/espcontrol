@@ -1164,12 +1164,13 @@ inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
     rail_h = layout.panel_h - layout.inset * 2;
   if (rail_h < control_modal_scaled_px(240, layout.short_side))
     rail_h = control_modal_scaled_px(240, layout.short_side);
+  lv_coord_t background_radius = rail_w / 8;
   lv_coord_t control_radius = rail_w / 4;
 
   ui.rail = lv_obj_create(ui.panel);
   lv_obj_set_size(ui.rail, rail_w, rail_h);
   apply_width_compensation(ui.rail, ctx->width_compensation_percent);
-  lv_obj_set_style_radius(ui.rail, control_radius, LV_PART_MAIN);
+  lv_obj_set_style_radius(ui.rail, background_radius, LV_PART_MAIN);
   lv_obj_set_style_bg_color(ui.rail, lv_color_hex(alarm_control_inactive_color(ctx)), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(ui.rail, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_border_width(ui.rail, 0, LV_PART_MAIN);
