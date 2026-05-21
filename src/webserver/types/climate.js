@@ -41,6 +41,7 @@ registerButtonType("climate", {
     }
 
     var labelField = condField();
+    labelField.classList.add("sp-climate-settings-gap");
     labelField.appendChild(helpers.textField(
       "Label", helpers.idPrefix + "label", b.label, "Climate", "label", true).field);
     function syncLabelField() {
@@ -77,6 +78,7 @@ registerButtonType("climate", {
     panel.appendChild(helpers.fieldWithControl("Icon & Temperatures", null, numberDisplayField.segment));
 
     var iconFields = condField();
+    iconFields.classList.add("sp-climate-settings-gap");
     var offIconPicker = helpers.iconPickerField(
       helpers.idPrefix + "climate-icon-picker",
       helpers.idPrefix + "climate-icon",

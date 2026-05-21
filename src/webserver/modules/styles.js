@@ -275,6 +275,7 @@ var CSS =
 
   ".sp-cond-field{padding:0 0 4px;display:none}" +
   ".sp-cond-field.sp-visible{display:block}" +
+  ".sp-cond-field.sp-climate-settings-gap.sp-visible{margin-bottom:24px}" +
   ".sp-schedule-times.sp-hidden{display:none}" +
 
   ".sp-range-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}" +
