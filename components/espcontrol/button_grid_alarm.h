@@ -26,6 +26,7 @@ struct AlarmCardCtx {
   int width_compensation_percent = 100;
   int grid_cols = 3;
   bool available = false;
+  uint32_t state_changed_ms = 0;
 };
 
 struct AlarmActionCtx {
@@ -43,10 +44,30 @@ struct AlarmPinModalUi {
   std::string pin;
 };
 
+struct AlarmControlModalUi {
+  lv_obj_t *overlay = nullptr;
+  lv_obj_t *panel = nullptr;
+  lv_obj_t *back_btn = nullptr;
+  lv_obj_t *title_lbl = nullptr;
+  lv_obj_t *age_lbl = nullptr;
+  lv_obj_t *rail = nullptr;
+  lv_obj_t *mode_btn[3] = {};
+  lv_obj_t *mode_icon[3] = {};
+  lv_obj_t *mode_label[3] = {};
+  AlarmActionCtx actions[3];
+  AlarmCardCtx *active = nullptr;
+  lv_timer_t *timer = nullptr;
+};
+
 struct AlarmToastUi {
   lv_obj_t *box = nullptr;
   lv_timer_t *timer = nullptr;
 };
+
+inline AlarmControlModalUi &alarm_control_modal_ui() {
+  static AlarmControlModalUi ui;
+  return ui;
+}
 
 inline AlarmPinModalUi &alarm_pin_modal_ui() {
   static AlarmPinModalUi ui;
@@ -135,6 +156,13 @@ inline const char *alarm_action_service(const std::string &mode) {
   return nullptr;
 }
 
+inline const char *alarm_control_button_label(const std::string &mode) {
+  if (mode == "home") return "Home";
+  if (mode == "away") return "Away";
+  if (mode == "disarm") return "Disarmed";
+  return alarm_action_label(mode);
+}
+
 inline std::string alarm_state_label(const std::string &state) {
   if (state.empty()) return "Unavailable";
   if (state == "disarmed") return "Disarmed";
@@ -175,6 +203,15 @@ inline bool alarm_state_releases_label(const std::string &state) {
   return state == "disarmed" || alarm_state_is_armed(state);
 }
 
+inline std::string alarm_state_control_mode(const std::string &state) {
+  if (state == "armed_home") return "home";
+  if (state == "armed_away") return "away";
+  if (state == "disarmed") return "disarm";
+  return "";
+}
+
+inline void alarm_control_update_modal(AlarmCardCtx *ctx);
+
 inline void alarm_set_card_state_colors(AlarmCardCtx *ctx, uint32_t checked_color) {
   if (!ctx || !ctx->btn) return;
   lv_obj_set_style_bg_color(ctx->btn, lv_color_hex(ctx->off_color),
@@ -187,6 +224,9 @@ inline void alarm_set_card_state_colors(AlarmCardCtx *ctx, uint32_t checked_colo
 
 inline void alarm_apply_home_state(AlarmCardCtx *ctx, const std::string &state) {
   if (!ctx || !ctx->btn) return;
+  if (ctx->state_changed_ms == 0 || state != ctx->state) {
+    ctx->state_changed_ms = esphome::millis();
+  }
   ctx->state = state;
   bool unavailable = state.empty() || state == "unavailable" || state == "unknown";
   ctx->available = !unavailable;
@@ -202,6 +242,7 @@ inline void alarm_apply_home_state(AlarmCardCtx *ctx, const std::string &state) 
     ctx->status_label,
     alarm_state_label(state),
     alarm_state_releases_label(state) && !unavailable && !triggered);
+  alarm_control_update_modal(ctx);
 }
 
 inline void subscribe_alarm_state(AlarmCardCtx *ctx) {
@@ -363,11 +404,70 @@ inline void send_alarm_action(AlarmActionCtx *action, const std::string &code) {
   esphome::api::global_api_server->send_homeassistant_action(req);
 }
 
+inline std::string alarm_elapsed_text(AlarmCardCtx *ctx) {
+  if (!ctx || ctx->state_changed_ms == 0) return "";
+  uint32_t elapsed = (esphome::millis() - ctx->state_changed_ms) / 1000;
+  if (elapsed == 0) return "Just now";
+  char buf[32];
+  snprintf(buf, sizeof(buf), "%lu second%s ago",
+    static_cast<unsigned long>(elapsed), elapsed == 1 ? "" : "s");
+  return std::string(buf);
+}
+
+inline uint32_t alarm_control_active_color(AlarmCardCtx *ctx, const std::string &mode) {
+  if (mode == "disarm") return DARK_CONTROL_NEUTRAL;
+  return ctx ? ctx->on_color : DEFAULT_SLIDER_COLOR;
+}
+
+inline void alarm_control_update_modal(AlarmCardCtx *ctx) {
+  AlarmControlModalUi &ui = alarm_control_modal_ui();
+  if (!ctx || ui.active != ctx) return;
+
+  std::string state_label = alarm_state_label(ctx->state);
+  if (ui.title_lbl) lv_label_set_text(ui.title_lbl, state_label.c_str());
+
+  std::string elapsed = alarm_elapsed_text(ctx);
+  if (ui.age_lbl) lv_label_set_text(ui.age_lbl, elapsed.c_str());
+
+  std::string active_mode = alarm_state_control_mode(ctx->state);
+  static const char *modes[3] = {"home", "away", "disarm"};
+  for (int i = 0; i < 3; i++) {
+    lv_obj_t *btn = ui.mode_btn[i];
+    if (!btn) continue;
+    bool selected = active_mode == modes[i];
+    uint32_t bg = selected ? alarm_control_active_color(ctx, modes[i]) : DARK_BACKGROUND_TERTIARY;
+    lv_obj_set_style_bg_color(btn, lv_color_hex(bg), LV_PART_MAIN);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(bg),
+      static_cast<lv_style_selector_t>(LV_PART_MAIN) | static_cast<lv_style_selector_t>(LV_STATE_PRESSED));
+    lv_obj_set_style_border_width(btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_PART_MAIN);
+  }
+}
+
+inline void alarm_control_timer_cb(lv_timer_t *) {
+  AlarmControlModalUi &ui = alarm_control_modal_ui();
+  if (ui.active) alarm_control_update_modal(ui.active);
+}
+
+inline void alarm_control_hide_modal() {
+  AlarmControlModalUi &ui = alarm_control_modal_ui();
+  if (ui.timer) lv_timer_del(ui.timer);
+  if (ui.overlay) lv_obj_del(ui.overlay);
+  ui = AlarmControlModalUi();
+}
+
 inline void alarm_pin_hide_modal() {
   AlarmPinModalUi &ui = alarm_pin_modal_ui();
   ui.pin.clear();
   if (ui.overlay) lv_obj_del(ui.overlay);
   ui = AlarmPinModalUi();
+}
+
+inline void alarm_action_activate(AlarmActionCtx *action);
+
+inline void alarm_control_mode_cb(lv_event_t *e) {
+  AlarmActionCtx *action = static_cast<AlarmActionCtx *>(lv_event_get_user_data(e));
+  alarm_action_activate(action);
 }
 
 inline void alarm_pin_update_display() {
@@ -452,6 +552,7 @@ inline void alarm_pin_open_modal(AlarmActionCtx *action) {
   media_volume_hide_modal();
   climate_control_hide_modal();
   switch_confirmation_hide_modal();
+  option_select_hide_modal();
   alarm_pin_hide_modal();
 
   AlarmPinModalUi &ui = alarm_pin_modal_ui();
@@ -479,6 +580,7 @@ inline void alarm_pin_open_modal(AlarmActionCtx *action) {
   control_modal_style_overlay(ui.overlay);
   ui.panel = lv_obj_create(ui.overlay);
   control_modal_style_panel(ui.panel, radius);
+  lv_obj_set_style_bg_color(ui.panel, lv_color_hex(DARK_OVERLAY), LV_PART_MAIN);
   control_modal_apply_panel_layout(ui.overlay, ui.panel, layout, radius);
 
   ui.back_btn = control_modal_create_round_button(
@@ -569,6 +671,160 @@ inline void alarm_action_activate(AlarmActionCtx *action) {
   send_alarm_action(action, "");
 }
 
+inline lv_obj_t *alarm_control_create_mode_button(
+    lv_obj_t *parent,
+    AlarmCardCtx *ctx,
+    const char *mode,
+    lv_coord_t width,
+    lv_coord_t height,
+    lv_coord_t radius,
+    const lv_font_t *icon_font,
+    const lv_font_t *label_font,
+    lv_obj_t **icon_out,
+    lv_obj_t **label_out) {
+  lv_obj_t *btn = lv_btn_create(parent);
+  lv_obj_set_size(btn, width, height);
+  apply_width_compensation(btn, ctx ? ctx->width_compensation_percent : 100);
+  lv_obj_set_style_radius(btn, radius, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(btn, lv_color_hex(DARK_BACKGROUND_TERTIARY), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(btn, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(btn, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(btn, LV_OBJ_FLAG_SCROLLABLE);
+  control_modal_apply_pressed_fill(btn);
+
+  lv_obj_t *content = lv_obj_create(btn);
+  lv_obj_set_size(content, lv_pct(100), lv_pct(100));
+  lv_obj_set_style_bg_opa(content, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_border_width(content, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(content, 0, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(content, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(content, LV_OBJ_FLAG_SCROLLABLE);
+
+  lv_obj_t *icon = lv_label_create(content);
+  lv_label_set_text(icon, alarm_action_icon(mode ? std::string(mode) : ""));
+  lv_obj_set_style_text_color(icon, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
+  lv_obj_set_style_text_align(icon, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  if (icon_font) lv_obj_set_style_text_font(icon, icon_font, LV_PART_MAIN);
+  apply_width_compensation(icon, ctx ? ctx->width_compensation_percent : 100);
+  lv_obj_align(icon, LV_ALIGN_CENTER, 0, -height / 9);
+
+  lv_obj_t *label = lv_label_create(content);
+  lv_label_set_text(label, alarm_control_button_label(mode ? std::string(mode) : ""));
+  lv_obj_set_style_text_color(label, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
+  lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  if (label_font) lv_obj_set_style_text_font(label, label_font, LV_PART_MAIN);
+  apply_width_compensation(label, ctx ? ctx->width_compensation_percent : 100);
+  lv_obj_align(label, LV_ALIGN_CENTER, 0, height / 7);
+
+  if (icon_out) *icon_out = icon;
+  if (label_out) *label_out = label;
+  return btn;
+}
+
+inline void alarm_control_open_modal(AlarmCardCtx *ctx) {
+  if (!ctx || !ctx->available) return;
+  media_volume_hide_modal();
+  climate_control_hide_modal();
+  switch_confirmation_hide_modal();
+  option_select_hide_modal();
+  alarm_pin_hide_modal();
+  alarm_control_hide_modal();
+
+  AlarmControlModalUi &ui = alarm_control_modal_ui();
+  ui.active = ctx;
+
+  ControlModalLayout layout = control_modal_calc_layout(ctx->width_compensation_percent);
+  lv_coord_t radius = control_modal_card_radius(ctx->btn);
+  const lv_font_t *label_font = ctx->label_font
+    ? ctx->label_font
+    : ctx->btn ? lv_obj_get_style_text_font(ctx->btn, LV_PART_MAIN) : nullptr;
+  const lv_font_t *icon_font = ctx->icon_font
+    ? ctx->icon_font
+    : ctx->icon_lbl ? lv_obj_get_style_text_font(ctx->icon_lbl, LV_PART_MAIN) : label_font;
+
+  ui.overlay = lv_obj_create(lv_layer_top());
+  control_modal_style_overlay(ui.overlay);
+  ui.panel = lv_obj_create(ui.overlay);
+  control_modal_style_panel(ui.panel, radius);
+  lv_obj_set_style_bg_color(ui.panel, lv_color_hex(DARK_OVERLAY), LV_PART_MAIN);
+  control_modal_apply_panel_layout(ui.overlay, ui.panel, layout, radius);
+
+  ui.back_btn = control_modal_create_round_button(
+    ui.panel, layout.back_size, "\U000F0141", icon_font,
+    DARK_BORDER, DARK_BACKGROUND_TERTIARY,
+    ctx->width_compensation_percent);
+  lv_obj_set_style_bg_opa(ui.back_btn, LV_OPA_TRANSP, LV_PART_MAIN);
+  lv_obj_set_style_border_width(ui.back_btn, 0, LV_PART_MAIN);
+  control_modal_apply_back_button_layout(ui.back_btn, layout);
+  lv_obj_add_event_cb(ui.back_btn, [](lv_event_t *) {
+    alarm_control_hide_modal();
+  }, LV_EVENT_CLICKED, nullptr);
+
+  ui.title_lbl = lv_label_create(ui.panel);
+  lv_obj_set_style_text_color(ui.title_lbl, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
+  lv_obj_set_style_text_align(ui.title_lbl, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  if (label_font) lv_obj_set_style_text_font(ui.title_lbl, label_font, LV_PART_MAIN);
+  apply_width_compensation(ui.title_lbl, ctx->width_compensation_percent);
+  lv_obj_set_width(ui.title_lbl, layout.panel_w - layout.inset * 2);
+  lv_label_set_long_mode(ui.title_lbl, LV_LABEL_LONG_CLIP);
+
+  ui.age_lbl = lv_label_create(ui.panel);
+  lv_obj_set_style_text_color(ui.age_lbl, lv_color_hex(DARK_TEXT_SOFT), LV_PART_MAIN);
+  lv_obj_set_style_text_align(ui.age_lbl, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+  if (label_font) lv_obj_set_style_text_font(ui.age_lbl, label_font, LV_PART_MAIN);
+  apply_width_compensation(ui.age_lbl, ctx->width_compensation_percent);
+  lv_obj_set_width(ui.age_lbl, layout.panel_w - layout.inset * 2);
+
+  lv_coord_t title_y = layout.inset + control_modal_scaled_px(10, layout.short_side);
+  lv_obj_align(ui.title_lbl, LV_ALIGN_TOP_MID, 0, title_y);
+  lv_obj_align(ui.age_lbl, LV_ALIGN_TOP_MID, 0,
+    title_y + control_modal_scaled_px(56, layout.short_side));
+
+  lv_coord_t rail_w = layout.panel_w * 46 / 100;
+  if (rail_w < control_modal_scaled_px(156, layout.short_side))
+    rail_w = control_modal_scaled_px(156, layout.short_side);
+  if (rail_w > layout.panel_w - layout.inset * 2) rail_w = layout.panel_w - layout.inset * 2;
+  lv_coord_t rail_h = layout.panel_h * 68 / 100;
+  if (rail_h < control_modal_scaled_px(300, layout.short_side))
+    rail_h = control_modal_scaled_px(300, layout.short_side);
+  if (rail_h > layout.panel_h - control_modal_scaled_px(170, layout.short_side))
+    rail_h = layout.panel_h - control_modal_scaled_px(170, layout.short_side);
+  if (rail_h < control_modal_scaled_px(240, layout.short_side))
+    rail_h = control_modal_scaled_px(240, layout.short_side);
+
+  ui.rail = lv_obj_create(ui.panel);
+  lv_obj_set_size(ui.rail, rail_w, rail_h);
+  apply_width_compensation(ui.rail, ctx->width_compensation_percent);
+  lv_obj_set_style_radius(ui.rail, rail_w / 4, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(ui.rail, lv_color_hex(DARK_BACKGROUND_TERTIARY), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(ui.rail, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_width(ui.rail, 0, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(ui.rail, 0, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(ui.rail, 0, LV_PART_MAIN);
+  lv_obj_clear_flag(ui.rail, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_align(ui.rail, LV_ALIGN_BOTTOM_MID, 0, -layout.inset);
+
+  static const char *modes[3] = {"home", "away", "disarm"};
+  lv_coord_t btn_h = rail_h / 3;
+  lv_coord_t btn_w = rail_w;
+  for (int i = 0; i < 3; i++) {
+    ui.mode_btn[i] = alarm_control_create_mode_button(
+      ui.rail, ctx, modes[i], btn_w, btn_h, rail_w / 4,
+      icon_font, label_font, &ui.mode_icon[i], &ui.mode_label[i]);
+    lv_obj_set_pos(ui.mode_btn[i], 0, i * btn_h);
+    ui.actions[i].card = ctx;
+    ui.actions[i].mode = modes[i];
+    ui.actions[i].requires_pin = alarm_action_requires_pin(ctx->options, ui.actions[i].mode);
+    lv_obj_add_event_cb(ui.mode_btn[i], alarm_control_mode_cb, LV_EVENT_CLICKED, &ui.actions[i]);
+  }
+
+  ui.timer = lv_timer_create(alarm_control_timer_cb, 1000, nullptr);
+  alarm_control_update_modal(ctx);
+  lv_obj_move_foreground(ui.back_btn);
+  lv_obj_move_foreground(ui.overlay);
+}
+
 inline void alarm_configure_page_grid(lv_obj_t *page, int num_slots, int cols) {
   if (!page) return;
   int slot_count = bounded_grid_slots(num_slots);
@@ -600,7 +856,7 @@ inline AlarmCardCtx *create_alarm_card_context(
     const lv_font_t *label_font,
     lv_color_t text_color,
     int width_compensation_percent,
-    bool build_default_page = true) {
+    bool build_default_page = false) {
   AlarmCardCtx *ctx = new AlarmCardCtx();
   ctx->entity_id = p.entity;
   ctx->label = p.label.empty() ? "Alarm" : p.label;
@@ -687,6 +943,5 @@ inline AlarmCardCtx *create_alarm_card_context(
 }
 
 inline void alarm_card_open_page(AlarmCardCtx *ctx) {
-  if (!ctx || !ctx->page || !ctx->available) return;
-  lv_scr_load_anim(ctx->page, LV_SCR_LOAD_ANIM_NONE, 0, 0, false);
+  alarm_control_open_modal(ctx);
 }

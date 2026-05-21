@@ -614,10 +614,6 @@ inline void grid_phase2(
     }
     if (p.type == "alarm") {
       if (!p.entity.empty()) {
-        std::string alarm_sp_cfg = optional_text_state(sp_configs, idx - 1) +
-          optional_text_state(sp_ext_configs, idx - 1) +
-          optional_text_state(sp_ext2_configs, idx - 1) +
-          optional_text_state(sp_ext3_configs, idx - 1);
         AlarmCardCtx *ctx = create_alarm_card_context(
           s, p, main_page_obj, NS, COLS,
           has_on ? on_val : DEFAULT_SLIDER_COLOR,
@@ -628,11 +624,42 @@ inline void grid_phase2(
           lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN),
           lv_obj_get_style_text_color(s.text_lbl, LV_PART_MAIN),
           cfg.width_compensation_percent,
-          alarm_sp_cfg.empty());
+          false);
         lv_obj_set_user_data(s.btn, ctx);
         subscribe_alarm_state(ctx);
         if (p.label.empty())
           subscribe_friendly_name(ctx->status_label, p.entity);
+      }
+      continue;
+    }
+    if (p.type == "alarm_action") {
+      if (!p.entity.empty()) {
+        AlarmCardCtx *alarm_action_card = new AlarmCardCtx();
+        alarm_action_card->entity_id = p.entity;
+        alarm_action_card->label = p.label.empty()
+          ? alarm_action_label(p.sensor) : p.label;
+        alarm_action_card->options = p.options;
+        alarm_action_card->btn = s.btn;
+        alarm_action_card->icon_lbl = s.icon_lbl;
+        alarm_action_card->grid_page = main_page_obj;
+        alarm_action_card->label_font = lv_obj_get_style_text_font(s.text_lbl, LV_PART_MAIN);
+        alarm_action_card->pin_label_font = alarm_action_card->label_font;
+        alarm_action_card->key_label_font = cfg.sp_sensor_font;
+        alarm_action_card->icon_font = cfg.icon_font;
+        alarm_action_card->on_color = has_on ? on_val : DEFAULT_SLIDER_COLOR;
+        alarm_action_card->off_color = has_off ? off_val : DEFAULT_OFF_COLOR;
+        alarm_action_card->tertiary_color = has_sensor_color ? sensor_val : DEFAULT_TERTIARY_COLOR;
+        alarm_action_card->width_compensation_percent = cfg.width_compensation_percent;
+        alarm_action_card->grid_cols = COLS;
+        alarm_set_card_state_colors(alarm_action_card, alarm_action_card->on_color);
+
+        AlarmActionCtx *action_ctx = new AlarmActionCtx();
+        action_ctx->card = alarm_action_card;
+        action_ctx->mode = alarm_action_valid(p.sensor) ? p.sensor : "away";
+        action_ctx->requires_pin =
+          alarm_action_requires_pin(alarm_action_card->options, action_ctx->mode);
+        subscribe_alarm_action_state(alarm_action_card, action_ctx->mode);
+        lv_obj_set_user_data(s.btn, action_ctx);
       }
       continue;
     }
@@ -881,7 +908,7 @@ inline void grid_phase2(
 
   for (int si = 0; si < NS; si++) {
     ParsedCfg p = parse_cfg(slots[si].config->state);
-    if (p.type != "subpage" && p.type != "alarm") continue;
+    if (p.type != "subpage") continue;
     bool sp_indicator = p.sensor == "indicator" && p.entity.empty();
 
     bool sp_has_icon_on = !p.icon_on.empty() && p.icon_on != "Auto";
@@ -1449,12 +1476,7 @@ inline void grid_phase2(
       }
     }
 
-    if (p.type == "alarm") {
-      AlarmCardCtx *ctx = (AlarmCardCtx *)lv_obj_get_user_data(slots[si].btn);
-      if (ctx) ctx->page = sub_scr;
-    } else {
-      lv_obj_set_user_data(slots[si].btn, (void *)sub_scr);
-    }
+    lv_obj_set_user_data(slots[si].btn, (void *)sub_scr);
   }
   refresh_weather_forecast_cards();
   ESP_LOGI("sensors", "Phase 2: done (%lu ms)", esphome::millis());

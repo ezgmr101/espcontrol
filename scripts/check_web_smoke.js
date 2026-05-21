@@ -98,7 +98,9 @@ assert.strictEqual(hooks.switchConfirmationEnabled(confirmationRoundTrip), true)
 assert.strictEqual(hooks.switchConfirmationMessage(confirmationRoundTrip), "Stop the print?");
 assert.strictEqual(hooks.switchConfirmationYesText(confirmationRoundTrip), "Power Down");
 assert.strictEqual(hooks.switchConfirmationNoText(confirmationRoundTrip), "Keep On");
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, false), false);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", false, false), true);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, false), true);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), false);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, false), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, true), true);
 assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonConfig(

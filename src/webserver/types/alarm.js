@@ -69,11 +69,10 @@ function renderAlarmCardTypeField(panel, b, helpers) {
 }
 
 registerButtonType("alarm", {
-  label: "Alarm (legacy)",
+  label: "Alarm",
   allowInSubpage: false,
   hideLabel: true,
   labelPlaceholder: "e.g. House Alarm",
-  isAvailable: function () { return false; },
   onSelect: function (b) {
     b.entity = "";
     b.label = "";
@@ -95,8 +94,6 @@ registerButtonType("alarm", {
       b.options = normalizedOptions;
       helpers.saveField("options", normalizedOptions);
     }
-
-    renderAlarmCardTypeField(panel, b, helpers);
 
     var entityField = helpers.entityField(
       "Alarm Entity",
@@ -141,11 +138,6 @@ registerButtonType("alarm", {
     panel.appendChild(disarmPinToggle.row);
     armPinToggle.input.addEventListener("change", savePinOptions);
     disarmPinToggle.input.addEventListener("change", savePinOptions);
-
-    var note = document.createElement("div");
-    note.className = "sp-field-hint";
-    note.textContent = "Choose a type above to turn this into a single alarm card.";
-    panel.appendChild(note);
   },
   renderPreview: function (b, helpers) {
     var label = (b.label && b.label.trim()) || (b.entity && b.entity.trim()) || "Alarm";
@@ -158,7 +150,7 @@ registerButtonType("alarm", {
 });
 
 registerButtonType("alarm_action", {
-  label: "Alarm",
+  label: "Alarm Action",
   allowInSubpage: true,
   labelPlaceholder: "e.g. Arm Away",
   onSelect: function (b) {
