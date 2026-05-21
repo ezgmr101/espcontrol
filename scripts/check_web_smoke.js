@@ -100,9 +100,9 @@ assert.strictEqual(hooks.switchConfirmationYesText(confirmationRoundTrip), "Powe
 assert.strictEqual(hooks.switchConfirmationNoText(confirmationRoundTrip), "Keep On");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", false, false), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, false), true);
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), false);
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, false), true);
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, true), true);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), true);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, false), false);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, true), false);
 assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonConfig(
   "alarm_control_panel.house;House;Security;Auto;;;alarm;;actions=away%7Cdisarm"
 ))), ["away", "disarm"]);

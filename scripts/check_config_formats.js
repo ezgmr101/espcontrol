@@ -524,9 +524,9 @@ assertButtonRoundTrip(hooks, "alarm action button", {
 
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", false, false), true, "alarm modal picker visible on parent page");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, false), true, "alarm modal picker visible with experimental flag");
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), false, "alarm modal picker hidden in subpages");
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, false), true, "alarm action picker visible on parent page");
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, true), true, "alarm action picker visible in subpages");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), true, "alarm card family visible in subpages");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, false), false, "alarm actions hidden as a separate picker item");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, true), false, "alarm actions hidden as a separate subpage picker item");
 assert.strictEqual(
   loadHooks("?developer=experimental").buttonTypeVisibleInPickerForExperimental("alarm", false, false),
   true,
@@ -536,6 +536,10 @@ assert.strictEqual(
   hooks.buttonTypePickerKeysForExperimental(false, false, "alarm").indexOf("alarm") >= 0,
   true,
   "saved alarm modal type remains selectable");
+assert.strictEqual(
+  hooks.buttonTypePickerKeysForExperimental(false, true, "alarm").indexOf("alarm") >= 0,
+  true,
+  "saved alarm action subtype remains represented in subpages");
 
 assertButtonRoundTrip(hooks, "cover toggle button", {
   entity: "cover.office_blind",

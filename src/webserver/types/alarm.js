@@ -1,10 +1,14 @@
 // Alarm cards: one-tap alarm_control_panel actions.
+var ALARM_CONTROL_PANEL_VALUE = "control_panel";
+
 function alarmUsesDefaultIcon(icon) {
   return !icon || icon === "Auto" || icon === "Security" || icon === "Alarm";
 }
 
 function alarmCardTypeOptions() {
-  var options = [];
+  var options = [
+    { value: ALARM_CONTROL_PANEL_VALUE, label: "Alarm Control Panel" },
+  ];
   for (var i = 0; i < ALARM_ACTIONS.length; i++) options.push(ALARM_ACTIONS[i]);
   return options;
 }
@@ -28,6 +32,30 @@ function alarmIconIsGenerated(icon) {
 function setAlarmCardType(b, value, helpers) {
   var info = alarmActionInfo(value);
   var wasAlarmAction = b.type === "alarm_action";
+
+  if (value === ALARM_CONTROL_PANEL_VALUE || !info) {
+    var shouldUseControlLabel = wasAlarmAction && alarmLabelIsGenerated(b.label);
+    var shouldUseControlIcon = alarmIconIsGenerated(b.icon);
+    b.type = "alarm";
+    b.sensor = "";
+    b.unit = "";
+    b.precision = "";
+    b.icon_on = "Auto";
+    if (shouldUseControlLabel) b.label = "";
+    if (shouldUseControlIcon) b.icon = "Security";
+    b.options = normalizeAlarmOptions(b.options);
+
+    helpers.saveField("type", b.type);
+    helpers.saveField("sensor", "");
+    helpers.saveField("unit", "");
+    helpers.saveField("precision", "");
+    helpers.saveField("icon_on", "Auto");
+    helpers.saveField("label", b.label || "");
+    helpers.saveField("icon", b.icon || "Security");
+    helpers.saveField("options", b.options || "");
+    renderButtonSettings();
+    return;
+  }
 
   info = info || ALARM_ACTIONS[0];
   var oldInfo = alarmActionInfo(b.sensor);
@@ -56,7 +84,11 @@ function setAlarmCardType(b, value, helpers) {
 }
 
 function renderAlarmCardTypeField(panel, b, helpers) {
-  var value = (alarmActionInfo(b.sensor) || ALARM_ACTIONS[0]).value;
+  var options = alarmCardTypeOptions();
+  if (helpers.isSub) options = options.slice(1);
+  var value = b.type === "alarm"
+    ? ALARM_CONTROL_PANEL_VALUE
+    : (alarmActionInfo(b.sensor) || ALARM_ACTIONS[0]).value;
   panel.appendChild(helpers.selectField(
     "Type",
     helpers.idPrefix + "alarm-card-type",
@@ -70,7 +102,7 @@ function renderAlarmCardTypeField(panel, b, helpers) {
 
 registerButtonType("alarm", {
   label: "Alarm",
-  allowInSubpage: false,
+  allowInSubpage: true,
   hideLabel: true,
   labelPlaceholder: "e.g. House Alarm",
   onSelect: function (b) {
@@ -83,7 +115,14 @@ registerButtonType("alarm", {
     b.icon_on = "Auto";
     b.options = "";
   },
+  renderSettingsBeforeLabel: function (panel, b, slot, helpers) {
+    renderAlarmCardTypeField(panel, b, helpers);
+  },
   renderSettings: function (panel, b, slot, helpers) {
+    if (helpers.isSub) {
+      setAlarmCardType(b, "away", helpers);
+      return;
+    }
     b.sensor = "";
     b.unit = "";
     b.precision = "";
@@ -150,9 +189,11 @@ registerButtonType("alarm", {
 });
 
 registerButtonType("alarm_action", {
-  label: "Alarm Action",
+  label: "Alarm",
   allowInSubpage: true,
   labelPlaceholder: "e.g. Arm Away",
+  pickerKey: "alarm",
+  isAvailable: function () { return false; },
   onSelect: function (b) {
     var info = ALARM_ACTIONS[0];
     b.entity = "";
