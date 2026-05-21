@@ -919,7 +919,7 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
 
   ui.arming_subtitle = lv_label_create(ui.arming_view);
   lv_label_set_text(ui.arming_subtitle, ctx ? ctx->label.c_str() : "");
-  lv_obj_set_style_text_color(ui.arming_subtitle, lv_color_hex(DARK_TEXT_SECONDARY), LV_PART_MAIN);
+  lv_obj_set_style_text_color(ui.arming_subtitle, lv_color_hex(DARK_TEXT_MUTED), LV_PART_MAIN);
   lv_obj_set_style_text_align(ui.arming_subtitle, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
   if (label_font) lv_obj_set_style_text_font(ui.arming_subtitle, label_font, LV_PART_MAIN);
   lv_label_set_long_mode(ui.arming_subtitle, LV_LABEL_LONG_DOT);
