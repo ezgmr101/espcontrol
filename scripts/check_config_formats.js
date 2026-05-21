@@ -522,19 +522,18 @@ assertButtonRoundTrip(hooks, "alarm action button", {
   options: "pin_arm=0",
 }, false);
 
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", false, false), false, "alarm picker hidden without experimental flag");
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, false), true, "alarm picker visible with experimental flag");
-assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, true), false, "alarm picker hidden in subpages");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm", true, false), false, "legacy full alarm setup is hidden from picker");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, false), true, "alarm action picker visible on parent page");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("alarm_action", false, true), true, "alarm action picker visible in subpages");
 assert.strictEqual(
   loadHooks("?developer=experimental").buttonTypeVisibleInPickerForExperimental("alarm", false, false),
-  true,
-  "alarm picker visible with developer URL flag"
+  false,
+  "legacy full alarm setup remains hidden with developer URL flag"
 );
 assert.strictEqual(
   hooks.buttonTypePickerKeysForExperimental(false, false, "alarm").indexOf("alarm") >= 0,
   true,
-  "saved alarm type remains selectable while hidden");
+  "saved legacy alarm type remains represented while hidden");
 
 assertButtonRoundTrip(hooks, "cover toggle button", {
   entity: "cover.office_blind",

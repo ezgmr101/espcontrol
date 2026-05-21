@@ -1354,7 +1354,6 @@ function previewHtmlValue(typePreview, key, fallback) {
 }
 
 function buttonTypePickerOptionList(isSub, selectedTypeKey) {
-  if (!isSub && selectedTypeKey === "alarm_action") selectedTypeKey = "alarm";
   var typeOpts = [];
   var selectedHiddenExperimental = null;
   for (var k in BUTTON_TYPES) {
@@ -1979,7 +1978,6 @@ function renderButtonSettings(forceOpen) {
   }
   {
     var selectedTypeKey = (rawTypeDef && rawTypeDef.pickerKey) || (b.type || "");
-    if (!c.isSub && b.type === "alarm_action") selectedTypeKey = "alarm";
     var typeOpts = buttonTypePickerOptionList(c.isSub, selectedTypeKey);
     var tf = document.createElement("div");
     tf.className = "sp-field";
@@ -2644,10 +2642,6 @@ function setupPreviewEvents() {
       var btnEl = e.target.closest("[data-slot]");
       if (btnEl) {
         var badgeSlot = parseInt(btnEl.getAttribute("data-slot"), 10);
-        var badgeButton = ctx().buttons[badgeSlot - 1];
-        if (badgeButton && badgeButton.type === "alarm") {
-          syncAlarmActionSubpage(badgeSlot, badgeButton);
-        }
         enterSubpage(badgeSlot);
         return;
       }

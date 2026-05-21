@@ -1,26 +1,10 @@
-// Alarm card: state-aware alarm_control_panel card with generated action page.
+// Alarm cards: one-tap alarm_control_panel actions.
 function alarmUsesDefaultIcon(icon) {
   return !icon || icon === "Auto" || icon === "Security" || icon === "Alarm";
 }
 
-function createAlarmActionButton(alarm, mode) {
-  var info = alarmActionInfo(mode) || ALARM_ACTIONS[0];
-  return normalizeButtonConfig({
-    entity: alarm.entity || "",
-    label: info.label,
-    icon: info.icon,
-    icon_on: "Auto",
-    sensor: info.value,
-    unit: "",
-    type: "alarm_action",
-    precision: "",
-    options: normalizeAlarmOptions(alarm.options),
-  });
-}
-
-function alarmCardTypeOptions(includeFullSetup) {
+function alarmCardTypeOptions() {
   var options = [];
-  if (includeFullSetup) options.push({ value: "alarm", label: "Full Setup" });
   for (var i = 0; i < ALARM_ACTIONS.length; i++) options.push(ALARM_ACTIONS[i]);
   return options;
 }
@@ -45,30 +29,20 @@ function setAlarmCardType(b, value, helpers) {
   var info = alarmActionInfo(value);
   var wasAlarmAction = b.type === "alarm_action";
 
-  if (!info) {
-    b.type = "alarm";
-    b.sensor = "";
-    b.unit = "";
-    b.precision = "";
-    b.icon_on = "Auto";
-    if (alarmLabelIsGenerated(b.label)) b.label = "";
-    if (alarmIconIsGenerated(b.icon)) b.icon = "Security";
-    b.options = normalizeAlarmOptions(b.options);
-  } else {
-    var oldInfo = alarmActionInfo(b.sensor);
-    var shouldUseGeneratedLabel = !wasAlarmAction || alarmLabelIsGenerated(b.label);
-    var shouldUseGeneratedIcon = !wasAlarmAction || alarmIconIsGenerated(b.icon) ||
-      (oldInfo && b.icon === oldInfo.icon);
+  info = info || ALARM_ACTIONS[0];
+  var oldInfo = alarmActionInfo(b.sensor);
+  var shouldUseGeneratedLabel = !wasAlarmAction || alarmLabelIsGenerated(b.label);
+  var shouldUseGeneratedIcon = !wasAlarmAction || alarmIconIsGenerated(b.icon) ||
+    (oldInfo && b.icon === oldInfo.icon);
 
-    b.type = "alarm_action";
-    b.sensor = info.value;
-    b.unit = "";
-    b.precision = "";
-    b.icon_on = "Auto";
-    if (shouldUseGeneratedLabel) b.label = info.label;
-    if (shouldUseGeneratedIcon) b.icon = info.icon;
-    b.options = normalizeAlarmOptions(b.options);
-  }
+  b.type = "alarm_action";
+  b.sensor = info.value;
+  b.unit = "";
+  b.precision = "";
+  b.icon_on = "Auto";
+  if (shouldUseGeneratedLabel) b.label = info.label;
+  if (shouldUseGeneratedIcon) b.icon = info.icon;
+  b.options = normalizeAlarmOptions(b.options);
 
   helpers.saveField("type", b.type);
   helpers.saveField("sensor", b.sensor || "");
@@ -82,13 +56,11 @@ function setAlarmCardType(b, value, helpers) {
 }
 
 function renderAlarmCardTypeField(panel, b, helpers) {
-  var includeFullSetup = !helpers.isSub || b.type === "alarm";
-  var value = b.type === "alarm" ? "alarm" :
-    ((alarmActionInfo(b.sensor) || ALARM_ACTIONS[0]).value);
+  var value = (alarmActionInfo(b.sensor) || ALARM_ACTIONS[0]).value;
   panel.appendChild(helpers.selectField(
     "Type",
     helpers.idPrefix + "alarm-card-type",
-    alarmCardTypeOptions(includeFullSetup),
+    alarmCardTypeOptions(),
     value,
     function () {
       setAlarmCardType(b, this.value, helpers);
@@ -96,43 +68,12 @@ function renderAlarmCardTypeField(panel, b, helpers) {
   ).field);
 }
 
-function syncAlarmActionSubpage(slot, alarm) {
-  if (!slot || !alarm) return;
-  var sp = getSubpage(slot);
-  buildSubpageGrid(sp);
-
-  var visible = alarmVisibleActions(alarm);
-  var byMode = {};
-  for (var i = 0; i < sp.buttons.length; i++) {
-    var child = sp.buttons[i];
-    if (!child || child.type !== "alarm_action") continue;
-    var mode = alarmActionInfo(child.sensor) ? child.sensor : "";
-    if (!mode) continue;
-    byMode[mode] = child;
-    child.entity = alarm.entity || "";
-    child.options = normalizeAlarmOptions(alarm.options);
-  }
-
-  for (var vi = 0; vi < visible.length; vi++) {
-    var action = visible[vi];
-    if (byMode[action]) continue;
-    var newSlot = subpageFirstFreeSlot(sp);
-    while (sp.buttons.length < newSlot) sp.buttons.push({ entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "", options: "" });
-    sp.buttons[newSlot - 1] = createAlarmActionButton(alarm, action);
-    var pos = findPlacementCell(sp.grid, 0, 1, NUM_SLOTS);
-    if (pos >= 0) placeSlotAt(sp.grid, newSlot, pos, 1);
-  }
-
-  sp.order = serializeSubpageGrid(sp);
-  saveSubpageEntity(slot);
-}
-
 registerButtonType("alarm", {
-  label: "Alarm",
+  label: "Alarm (legacy)",
   allowInSubpage: false,
   hideLabel: true,
   labelPlaceholder: "e.g. House Alarm",
-  experimental: "developer",
+  isAvailable: function () { return false; },
   onSelect: function (b) {
     b.entity = "";
     b.label = "";
@@ -201,68 +142,24 @@ registerButtonType("alarm", {
     armPinToggle.input.addEventListener("change", savePinOptions);
     disarmPinToggle.input.addEventListener("change", savePinOptions);
 
-    var visible = alarmVisibleActions(b);
-    var actionStack = document.createElement("div");
-    actionStack.className = "sp-field-stack";
-    var actionInputs = {};
-    ALARM_ACTIONS.forEach(function (action) {
-      var row = helpers.toggleRow(
-        action.label,
-        helpers.idPrefix + "alarm-action-" + action.value,
-        visible.indexOf(action.value) >= 0
-      );
-      actionInputs[action.value] = row.input;
-      actionStack.appendChild(row.row);
-      row.input.addEventListener("change", saveActionOptions);
-    });
-    panel.appendChild(helpers.fieldWithControl("Visible Actions", null, actionStack));
-
-    function saveActionOptions() {
-      var selected = [];
-      ALARM_ACTIONS.forEach(function (action) {
-        if (actionInputs[action.value] && actionInputs[action.value].checked) {
-          selected.push(action.value);
-        }
-      });
-      if (!selected.length) {
-        selected = alarmActionValues();
-        ALARM_ACTIONS.forEach(function (action) {
-          if (actionInputs[action.value]) actionInputs[action.value].checked = true;
-        });
-      }
-      setAlarmVisibleActions(b, selected);
-      helpers.saveField("options", b.options);
-      scheduleRender();
-    }
-
-    appendEditAlarmPageButton(panel, slot);
+    var note = document.createElement("div");
+    note.className = "sp-field-hint";
+    note.textContent = "Choose a type above to turn this into a single alarm card.";
+    panel.appendChild(note);
   },
   renderPreview: function (b, helpers) {
     var label = (b.label && b.label.trim()) || (b.entity && b.entity.trim()) || "Alarm";
     var iconName = alarmUsesDefaultIcon(b.icon) ? "security" : iconSlug(b.icon);
     return {
       iconHtml: '<span class="sp-btn-icon mdi mdi-' + iconName + '"></span>',
-      labelHtml:
-        '<span class="sp-btn-label-row"><span class="sp-btn-label">' +
-        helpers.escHtml(label) + '</span><span class="sp-subpage-badge mdi mdi-chevron-right"></span></span>',
+      labelHtml: '<span class="sp-btn-label">' + helpers.escHtml(label) + '</span>',
     };
-  },
-  afterSave: function (b, slot, helpers) {
-    if (helpers && helpers.isSub) return;
-    syncAlarmActionSubpage(slot, b);
-  },
-  contextMenuItems: function (slot, b, helpers) {
-    helpers.addCtxItem("cog", "Edit Alarm Page", function () {
-      syncAlarmActionSubpage(slot, b);
-      enterSubpage(slot);
-    });
   },
 });
 
 registerButtonType("alarm_action", {
-  label: "Alarm Action",
+  label: "Alarm",
   allowInSubpage: true,
-  isAvailable: function (ctx) { return !!(ctx && ctx.isSub); },
   labelPlaceholder: "e.g. Arm Away",
   onSelect: function (b) {
     var info = ALARM_ACTIONS[0];
@@ -328,16 +225,3 @@ registerButtonType("alarm_action", {
     };
   },
 });
-
-function appendEditAlarmPageButton(panel, slot) {
-  var configBtn = document.createElement("button");
-  configBtn.className = "sp-action-btn sp-edit-subpage-btn";
-  configBtn.textContent = "Edit Alarm Page";
-  configBtn.addEventListener("click", function () {
-    var alarm = state.buttons[slot - 1];
-    syncAlarmActionSubpage(slot, alarm);
-    closeSettings();
-    enterSubpage(slot);
-  });
-  panel.appendChild(configBtn);
-}
