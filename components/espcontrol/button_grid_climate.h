@@ -465,7 +465,7 @@ inline void climate_apply_4848_bottom_chip_padding(lv_obj_t *chip, bool option_c
   lv_obj_set_style_pad_left(chip, option_chip ? 16 : 8, LV_PART_MAIN);
   lv_obj_set_style_pad_right(chip, option_chip ? 14 : 8, LV_PART_MAIN);
   lv_obj_set_style_pad_top(chip, option_chip ? 8 : 4, LV_PART_MAIN);
-  lv_obj_set_style_pad_bottom(chip, option_chip ? 8 : 4, LV_PART_MAIN);
+  lv_obj_set_style_pad_bottom(chip, option_chip ? 12 : 7, LV_PART_MAIN);
   if (option_chip) lv_obj_set_style_pad_column(chip, 12, LV_PART_MAIN);
 }
 
