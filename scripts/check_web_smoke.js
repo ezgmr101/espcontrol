@@ -158,7 +158,7 @@ const climatePreviewButton = {
 const climatePreviewC = hooks.buttonTypePreviewFor("climate", climatePreviewButton, {
   temperatureUnit: "\u00b0C",
 });
-assert.strictEqual(climatePreviewC.buttonClass, "sp-climate-card", "climate preview exposes shared card class");
+assert.strictEqual(climatePreviewC.buttonClass, "sp-climate-temp-card", "climate temperature preview uses temperature card class");
 assert(climatePreviewC.iconHtml.includes("\u00b0C"), "climate preview uses Celsius unit");
 const climatePreviewF = hooks.buttonTypePreviewFor("climate", climatePreviewButton, {
   temperatureUnit: "\u00b0F",
@@ -183,6 +183,7 @@ const climateIconPreview = hooks.buttonTypePreviewFor("climate", {
   temperatureUnit: "\u00b0C",
 });
 assert(climateIconPreview.iconHtml.includes("mdi-thermostat"), "climate icon mode preview uses the selected icon");
+assert.strictEqual(climateIconPreview.buttonClass, undefined, "climate icon mode uses a standard card wrapper");
 assert(!climateIconPreview.iconHtml.includes("sp-climate-card-icon"), "climate icon mode uses standard card icon layout");
 assert(!climateIconPreview.iconHtml.includes("\u00b0C"), "climate icon mode preview does not show a large temperature");
 assert.strictEqual(hooks.normalizeScreensaverAction("Screen Dimmed"), "dim");
