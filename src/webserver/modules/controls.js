@@ -1954,6 +1954,7 @@ function renderButtonSettings(forceOpen) {
       button.textContent = optionLabel(entry);
       button.classList.toggle("active", optValue === value);
       button.addEventListener("click", function () {
+        for (var key in buttons) buttons[key].classList.toggle("active", key === optValue);
         if (onSelect) onSelect(optValue, button);
       });
       segment.appendChild(button);
