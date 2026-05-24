@@ -154,6 +154,13 @@ def validate_rotation(slug: str, device: dict[str, Any], errors: list[str]) -> N
                 errors.append(device_error(slug, f"rotation.options contains duplicate value {option!r}"))
             seen.add(option)
 
+    default = rotation.get("default")
+    if default is not None:
+        if not isinstance(default, str) or default not in VALID_ROTATIONS:
+            errors.append(device_error(slug, "rotation.default must be '0', '90', '180', or '270' when set"))
+        elif isinstance(options, list) and default not in options:
+            errors.append(device_error(slug, "rotation.default must be one of rotation.options"))
+
     if "displayOffset" in rotation and not is_number(rotation["displayOffset"]):
         errors.append(device_error(slug, "rotation.displayOffset must be a number when set"))
 

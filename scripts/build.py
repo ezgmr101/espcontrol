@@ -471,6 +471,8 @@ def web_features(device):
     if rotation.get("enabled"):
         features["screenRotation"] = True
         features["screenRotationOptions"] = rotation.get("options", [])
+        if "default" in rotation:
+            features["screenRotationDefault"] = rotation["default"]
         if "displayOffset" in rotation:
             features["screenRotationDisplayOffset"] = rotation["displayOffset"]
     if device.get("internalRelays"):

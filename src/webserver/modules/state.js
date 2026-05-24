@@ -66,7 +66,7 @@ var state = {
   ntpServer3: NTP_SERVER_DEFAULTS[2],
   customMonthNames: false,
   monthNames: MONTH_NAME_DEFAULTS.slice(),
-  screenRotation: "0",
+  screenRotation: (CFG.features && CFG.features.screenRotationDefault) || "0",
   screenRotationOptions: (CFG.features && CFG.features.screenRotationOptions) || ["0", "90", "180", "270"],
   screenRotationDeviceOptions: null,
   sunrise: "",

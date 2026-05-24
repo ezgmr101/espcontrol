@@ -505,7 +505,9 @@
           "90",
           "180",
           "270"
-        ]
+        ],
+        "default": "180",
+        "displayOffset": 180
       },
       "internalRelays": [
         {
