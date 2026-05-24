@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Smoke tests for scripts/firmware_matrix.py."""
+"""Smoke tests for scripts/device_matrix.py."""
 
 from __future__ import annotations
 
@@ -10,25 +10,25 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-import firmware_matrix
+import device_matrix
 
 
 def run_ok(args: list[str]) -> object:
     stdout = io.StringIO()
     with redirect_stdout(stdout):
-        code = firmware_matrix.main(args)
+        code = device_matrix.main(args)
     assert code == 0, f"{args} exited {code}"
     return json.loads(stdout.getvalue())
 
 
 def run_fails(args: list[str]) -> None:
     with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-        code = firmware_matrix.main(args)
+        code = device_matrix.main(args)
     assert code != 0, f"{args} unexpectedly passed"
 
 
 def manifest_data() -> dict:
-    return firmware_matrix.load_manifest()
+    return device_matrix.load_manifest()
 
 
 def test_release_matrix_shape() -> None:
@@ -39,12 +39,14 @@ def test_release_matrix_shape() -> None:
     for entry in include:
         assert set(entry) == {"device", "slug", "chip"}
         assert entry["device"] == entry["slug"]
-        assert entry["chip"] in firmware_matrix.VALID_CHIP_FAMILIES
+        assert entry["chip"] in device_matrix.VALID_CHIP_FAMILIES
 
 
 def test_nightly_matrix_includes_every_manifest_slug() -> None:
     matrix = run_ok(["nightly"])
-    assert matrix == {"slug": list(manifest_data()["devices"].keys())}
+    assert matrix == {
+        "include": [{"slug": slug} for slug in manifest_data()["devices"].keys()]
+    }
 
 
 def test_release_matrix_includes_every_manifest_slug() -> None:
@@ -55,7 +57,7 @@ def test_release_matrix_includes_every_manifest_slug() -> None:
 def test_missing_chip_metadata_fails() -> None:
     data = copy.deepcopy(manifest_data())
     first_slug = next(iter(data["devices"]))
-    del data["devices"][first_slug]["firmware"]["build"]["chipFamily"]
+    del data["devices"][first_slug]["firmware"]["build"]["chip"]
 
     with TemporaryDirectory() as tmp:
         manifest = Path(tmp) / "manifest.json"
@@ -72,7 +74,7 @@ def main() -> int:
     ]
     for test in tests:
         test()
-    print("Firmware matrix checks passed.")
+    print("Device matrix checks passed.")
     return 0
 
 

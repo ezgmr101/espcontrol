@@ -14,8 +14,8 @@ env:
   ESPCONTROL_BUILD_CACHE_MAX_MB: 1024
 
 jobs:
-  prepare-matrix:
-    name: Prepare Firmware Matrix
+  device-matrix:
+    name: Prepare Device Matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -24,23 +24,23 @@ jobs:
         with:
           sparse-checkout: |
             devices/manifest.json
-            scripts/firmware_matrix.py
+            scripts/device_matrix.py
           sparse-checkout-cone-mode: false
 
-      - name: Generate firmware matrix
+      - name: Generate device matrix
         id: matrix
         run: |
-          MATRIX=$(python3 scripts/firmware_matrix.py release)
+          MATRIX=$(python3 scripts/device_matrix.py release)
           echo "matrix=${MATRIX}" >> "$GITHUB_OUTPUT"
 
   build-firmware:
     name: Build ${{ matrix.slug }}
-    needs: prepare-matrix
+    needs: device-matrix
     runs-on: self-hosted
     strategy:
       fail-fast: false
       max-parallel: 1
-      matrix: ${{ fromJson(needs.prepare-matrix.outputs.matrix) }}
+      matrix: ${{ fromJSON(needs.device-matrix.outputs.matrix) }}
     steps:
       - name: Prepare self-hosted workspace
         run: |

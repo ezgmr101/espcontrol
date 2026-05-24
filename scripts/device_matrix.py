@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate GitHub Actions firmware build matrices from devices/manifest.json."""
+"""Generate GitHub Actions device build matrices from devices/manifest.json."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ DEVICE_MANIFEST = ROOT / "devices" / "manifest.json"
 VALID_CHIP_FAMILIES = {"ESP32-P4", "ESP32-S3"}
 
 
-class FirmwareMatrixError(RuntimeError):
+class DeviceMatrixError(RuntimeError):
     pass
 
 
@@ -24,34 +24,34 @@ def load_manifest(path: Path = DEVICE_MANIFEST) -> dict[str, Any]:
         with path.open(encoding="utf-8") as f:
             data = json.load(f)
     except FileNotFoundError as exc:
-        raise FirmwareMatrixError(f"manifest not found: {path}") from exc
+        raise DeviceMatrixError(f"manifest not found: {path}") from exc
     except json.JSONDecodeError as exc:
-        raise FirmwareMatrixError(f"{path} is not valid JSON: {exc}") from exc
+        raise DeviceMatrixError(f"{path} is not valid JSON: {exc}") from exc
 
     devices = data.get("devices")
     if not isinstance(devices, dict) or not devices:
-        raise FirmwareMatrixError(f"{path} must contain a non-empty devices object")
+        raise DeviceMatrixError(f"{path} must contain a non-empty devices object")
     return data
 
 
 def chip_family(slug: str, device: Any) -> str:
     if not isinstance(device, dict):
-        raise FirmwareMatrixError(f"{slug}: device entry must be an object")
+        raise DeviceMatrixError(f"{slug}: device entry must be an object")
 
     firmware = device.get("firmware")
     if not isinstance(firmware, dict):
-        raise FirmwareMatrixError(f"{slug}: missing firmware object")
+        raise DeviceMatrixError(f"{slug}: missing firmware object")
 
     build = firmware.get("build")
     if not isinstance(build, dict):
-        raise FirmwareMatrixError(f"{slug}: missing firmware.build object")
+        raise DeviceMatrixError(f"{slug}: missing firmware.build object")
 
-    chip = build.get("chipFamily")
+    chip = build.get("chip")
     if not isinstance(chip, str) or not chip:
-        raise FirmwareMatrixError(f"{slug}: missing firmware.build.chipFamily")
+        raise DeviceMatrixError(f"{slug}: missing firmware.build.chip")
     if chip not in VALID_CHIP_FAMILIES:
         valid = ", ".join(sorted(VALID_CHIP_FAMILIES))
-        raise FirmwareMatrixError(f"{slug}: firmware.build.chipFamily must be one of {valid}")
+        raise DeviceMatrixError(f"{slug}: firmware.build.chip must be one of {valid}")
     return chip
 
 
@@ -69,8 +69,8 @@ def release_matrix(data: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
     }
 
 
-def nightly_matrix(data: dict[str, Any]) -> dict[str, list[str]]:
-    return {"slug": list(data["devices"].keys())}
+def nightly_matrix(data: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
+    return {"include": [{"slug": slug} for slug in data["devices"].keys()]}
 
 
 def write_json(data: Any) -> None:
@@ -102,7 +102,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         write_json(args.matrix(load_manifest(args.manifest)))
-    except FirmwareMatrixError as exc:
+    except DeviceMatrixError as exc:
         print(f"::error::{exc}", file=sys.stderr)
         return 1
     return 0
