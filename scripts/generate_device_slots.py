@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate repeated ESPHome button-slot wiring from devices/manifest.json."""
+"""Generate repeated ESPHome device YAML from devices/manifest.json."""
 
 from __future__ import annotations
 
@@ -44,6 +44,7 @@ def slot_device(slug: str, device: dict, settings: dict) -> dict:
         "climate_option_title_font": fonts.get("climateOptionTitle"),
         "climate_option_value_font": fonts.get("climateOptionValue"),
         "wrap_tall_labels": display["wrapTallLabels"],
+        "package": device["firmware"].get("package"),
     }
     if "portraitCols" in layout:
         slot["portrait_cols"] = layout["portraitCols"]
@@ -70,6 +71,146 @@ def load_devices() -> list[dict]:
         **data.get("settings", {}),
     }
     return [slot_device(slug, device, settings) for slug, device in data["devices"].items()]
+
+
+PACKAGE_HEADER = """# =============================================================================
+# PACKAGES - ESPHome include manifest
+# =============================================================================
+# Load order follows dependencies: device and assets first, then config,
+# addons, and screens. Loading screen must be the first page so LVGL shows
+# it at startup. Main page (lvgl.yaml) is included after setup screens.
+# =============================================================================
+
+"""
+
+
+def package_data(device: dict) -> dict:
+    package = device.get("package")
+    if not package:
+        raise ValueError(f"Missing firmware.package data for {device['slug']}")
+    return package
+
+
+def package_substitution_lines(device: dict) -> list[str]:
+    package = package_data(device)
+    lines = [
+        f'  device_slug: "{device["slug"]}"',
+        f'  firmware_manifest_slug: "{device["slug"]}"',
+    ]
+    if package.get("firmwareVersion"):
+        lines.append(f'  firmware_version: "{package["firmwareVersion"]}"')
+    for key, value in package["substitutions"].items():
+        lines.append(f"  {key}: {value}")
+    if package.get("ethernetSelectable"):
+        frequency = package["backlightPwmFrequency"]
+        lines.extend(
+            [
+                '  network_transport: "wifi"',
+                '  disable_updates: "false"',
+                '  network_package_suffix: ${ "_ethernet" if network_transport == "ethernet" else "" }',
+                '  firmware_update_package_suffix: ${ "_disabled" if disable_updates == "true" else "" }',
+                f'  backlight_pwm_frequency: ${{ "{frequency["ethernet"]}" if network_transport == "ethernet" else "{frequency["wifi"]}" }}',
+            ]
+        )
+    return lines
+
+
+def include_line(key: str, include: str) -> str:
+    key_text = f"  {key}:"
+    return key_text.ljust(19) + include if len(key_text) < 19 else f"{key_text} {include}"
+
+
+def package_file_text(device: dict) -> str:
+    package = package_data(device)
+    network_suffix = "${network_package_suffix}" if package.get("ethernetSelectable") else ""
+    network_screen_key = "screen_network" if package.get("ethernetSelectable") else "screen_wifi"
+    network_screen_path = (
+        "../../common/device/screen_${network_transport}_setup.yaml"
+        if package.get("ethernetSelectable")
+        else "../../common/device/screen_wifi_setup.yaml"
+    )
+    firmware_update_suffix = (
+        "${firmware_update_package_suffix}" if package.get("ethernetSelectable") else ""
+    )
+
+    lines = [
+        PACKAGE_HEADER.rstrip(),
+        "",
+        "substitutions:",
+        *package_substitution_lines(device),
+        "",
+        "packages:",
+        "  # ---------------------------------------------------------------------------",
+        "  # Device, assets, and LVGL base",
+        "  # ---------------------------------------------------------------------------",
+        include_line("device", "!include device/device.yaml"),
+    ]
+    if package.get("networkCoprocessor"):
+        lines.append(
+            include_line(
+                "network_coprocessor",
+                f"!include device/network_coprocessor{network_suffix}.yaml",
+            )
+        )
+    lines.extend(
+        [
+            include_line("fonts", "!include ../../common/assets/fonts.yaml"),
+            include_line("icons", "!include ../../common/assets/icons.yaml"),
+            include_line(
+                package.get("deviceFontPackageKey", "fonts_device"),
+                "!include device/fonts.yaml",
+            ),
+            include_line("button_theme", "!include ../../common/theme/button.yaml"),
+            "  # ---------------------------------------------------------------------------",
+            "  # Configuration (text/select/number components for web UI)",
+            "  # ---------------------------------------------------------------------------",
+            include_line("colors", "!include ../../common/config/colors.yaml"),
+            include_line("button_order", "!include ../../common/config/button_order.yaml"),
+            include_line("display_config", "!include ../../common/config/display.yaml"),
+            button_package_block(device).rstrip(),
+            "  # ---------------------------------------------------------------------------",
+            "  # Addons",
+            "  # ---------------------------------------------------------------------------",
+            include_line(
+                "connectivity",
+                f"!include ../../common/addon/connectivity{network_suffix}.yaml",
+            ),
+        ]
+    )
+    if package.get("improvSerial"):
+        lines.append(include_line("improv_serial", "!include ../../common/addon/improv_serial.yaml"))
+    lines.extend(
+        [
+            include_line("time_sync", "!include ../../common/addon/time.yaml"),
+            include_line("backlight", "!include ../../common/addon/backlight.yaml"),
+            include_line("bl_schedule", "!include ../../common/addon/backlight_schedule.yaml"),
+            include_line("network", f"!include ../../common/addon/network{network_suffix}.yaml"),
+            include_line(
+                "fw_update",
+                f"!include ../../common/addon/firmware_update{firmware_update_suffix}.yaml",
+            ),
+            "",
+            "  # ---------------------------------------------------------------------------",
+            "  # Screens (loading must be first page for LVGL startup)",
+            "  # ---------------------------------------------------------------------------",
+            include_line(
+                "screen_loading",
+                f"!include ../../common/device/screen_loading{network_suffix}.yaml",
+            ),
+            include_line(network_screen_key, f"!include {network_screen_path}"),
+            include_line("screen_ha", "!include ../../common/device/screen_ha_setup.yaml"),
+            include_line("screen_ha_act", "!include ../../common/device/screen_ha_actions.yaml"),
+            include_line("screen_setup", "!include ../../common/device/screen_button_setup.yaml"),
+            include_line("screen_clock", "!include ../../common/device/screen_clock.yaml"),
+            "  # ---------------------------------------------------------------------------",
+            "  # Main page and dynamic sensor subscriptions (after setup screens)",
+            "  # ---------------------------------------------------------------------------",
+            include_line("lvgl", "!include device/lvgl.yaml"),
+            include_line("sensors", "!include device/sensors.yaml"),
+            "",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def button_package_block(device: dict) -> str:
@@ -341,8 +482,7 @@ def main() -> int:
         package_path = ROOT / "devices" / slug / "packages.yaml"
         sensor_path = ROOT / "devices" / slug / "device" / "sensors.yaml"
 
-        package_text = package_path.read_text(encoding="utf-8")
-        update(package_path, replace_package_block(package_text, device), args.check, changed)
+        update(package_path, package_file_text(device), args.check, changed)
 
         sensor_text = sensor_path.read_text(encoding="utf-8")
         update(sensor_path, replace_sensor_blocks(sensor_text, device), args.check, changed)
@@ -356,7 +496,7 @@ def main() -> int:
         for path in changed:
             print(f"updated {path.relative_to(ROOT)}")
     else:
-        print("Device slot YAML is up to date.")
+        print("Device YAML is up to date.")
     return 0
 
 
