@@ -16,6 +16,7 @@ const WEB_MODULE_ORDER = [
   "api",
   "config_codec",
   "controls",
+  "backup_contract",
   "app",
 ];
 

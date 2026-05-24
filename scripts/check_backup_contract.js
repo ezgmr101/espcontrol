@@ -1,0 +1,188 @@
+#!/usr/bin/env node
+"use strict";
+
+const assert = require("assert");
+const path = require("path");
+const vm = require("vm");
+const { loadBundledWebSource } = require("./web_source");
+
+const ROOT = path.resolve(__dirname, "..");
+const SOURCE = path.join(ROOT, "src", "webserver", "www.js");
+
+function loadHooks() {
+  const sandbox = {
+    __ESPCONTROL_TEST_HOOKS__: {},
+    console: { log() {}, warn() {}, error() {} },
+    location: { search: "" },
+    URLSearchParams,
+    setTimeout,
+    clearTimeout,
+    requestAnimationFrame(fn) { return setTimeout(fn, 0); },
+    document: {
+      readyState: "loading",
+      activeElement: null,
+      addEventListener() {},
+    },
+  };
+  sandbox.window = sandbox;
+  vm.createContext(sandbox);
+  vm.runInContext(loadBundledWebSource(), sandbox, { filename: SOURCE });
+  return sandbox.__ESPCONTROL_TEST_HOOKS__.config;
+}
+
+function plain(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function buttonShape(b) {
+  return {
+    entity: b.entity || "",
+    label: b.label || "",
+    icon: b.icon || "Auto",
+    icon_on: b.icon_on || "Auto",
+    sensor: b.sensor || "",
+    unit: b.unit || "",
+    type: b.type || "",
+    precision: b.precision || "",
+    options: b.options || "",
+  };
+}
+
+function throwsBackupMessage(fn, expected) {
+  assert.throws(fn, (err) => {
+    assert.strictEqual(err.backupMessage, expected);
+    return true;
+  });
+}
+
+const hooks = loadHooks();
+assert(hooks, "web config helpers were not exported");
+
+const v2 = hooks.createBackupConfig({
+  device: "panel-a",
+  slots: 3,
+  exported_at: "2026-05-24T12:00:00.000Z",
+  grid: [1, 2, 0],
+  sizes: { 2: 2 },
+  button_on_color: "AA0000",
+  button_off_color: "111111",
+  sensor_card_color: "222222",
+  buttons: [
+    { entity: "light.kitchen", label: "Kitchen", icon: "Auto", icon_on: "Lightbulb" },
+    { entity: "weather.home", label: "Weather", type: "weather_forecast" },
+    {},
+  ],
+  subpages: {
+    1: {
+      order: ["1", "B"],
+      buttons: [{ entity: "scene.movie", label: "Movie", icon: "Flash", type: "action", sensor: "scene.turn_on" }],
+    },
+  },
+  settings: { timezone: "Europe/London (GMT+0)", clock_bar: true },
+  screen: { brightness_day: 80, schedule_mode: "clock" },
+});
+
+assert.strictEqual(v2.version, 2, "exports v2 backups");
+assert.strictEqual(v2.format, "espcontrol.backup", "exports backup format marker");
+assert.deepStrictEqual(plain(v2.source), { device: "panel-a", slots: 3 }, "exports source metadata");
+assert.strictEqual(v2.button_order, "1,2d", "exports legacy-compatible button_order");
+assert(Array.isArray(v2.buttons), "exports legacy-compatible buttons array");
+assert.strictEqual(typeof v2.subpages["1"], "string", "exports legacy-compatible subpage strings");
+assert.strictEqual(v2.buttons[1].type, "weather", "exports canonical card types");
+assert.strictEqual(v2.buttons[1].precision, "tomorrow", "exports migrated card details");
+
+const normalizedV1 = hooks.normalizeBackupConfig({
+  version: 1,
+  device: "panel-a",
+  button_order: "1,2",
+  buttons: [
+    { entity: "weather.home", label: "Weather", icon: "Auto", icon_on: "Auto", type: "weather_forecast" },
+    { entity: "sensor.washer", label: "Washer", icon: "Washer", icon_on: "Auto", type: "text_sensor" },
+  ],
+  subpages: {
+    1: "1,B|media_player.living:Living:Speaker:Auto:controls::media",
+  },
+});
+
+assert.strictEqual(normalizedV1.version, 2, "v1 imports normalize to v2");
+assert.strictEqual(normalizedV1.format, hooks.BACKUP_FORMAT, "v1 imports gain the v2 marker");
+assert.deepStrictEqual(buttonShape(normalizedV1.buttons[0]), buttonShape({
+  entity: "weather.home",
+  label: "",
+  icon: "Auto",
+  icon_on: "Auto",
+  type: "weather",
+  precision: "tomorrow",
+}), "legacy weather card migrates inside a backup");
+assert.deepStrictEqual(buttonShape(normalizedV1.buttons[1]), buttonShape({
+  entity: "",
+  label: "",
+  icon: "Washer",
+  icon_on: "Auto",
+  type: "sensor",
+  precision: "text",
+}), "legacy text sensor card migrates inside a backup");
+assert(
+  normalizedV1.subpages["1"].includes("play_pause") || normalizedV1.subpages["1"].includes("M,"),
+  "legacy subpage config is normalized"
+);
+
+const sameDevicePlan = hooks.planBackupImport(v2, { device: "panel-a", slots: 3 });
+assert.deepStrictEqual(plain(sameDevicePlan.warnings), [], "same-device import has no warnings");
+assert.strictEqual(sameDevicePlan.button_order, "1,2d", "same-device import keeps order");
+assert.deepStrictEqual(buttonShape(sameDevicePlan.buttons[1]), buttonShape(v2.buttons[1]), "same-device import keeps migrated button");
+assert(sameDevicePlan.subpages["1"], "same-device import keeps subpages");
+
+const crossDevicePlan = hooks.planBackupImport({
+  version: 1,
+  device: "large-panel",
+  button_order: "2w,1,3",
+  buttons: [
+    { entity: "light.kitchen", label: "Kitchen", icon: "Auto", icon_on: "Lightbulb" },
+    { entity: "weather.home", label: "Weather", icon: "Auto", icon_on: "Auto", type: "weather_forecast" },
+    { entity: "climate.hall", label: "Hall", type: "climate" },
+    {},
+  ],
+  subpages: {
+    2: "1,B|scene.movie:Movie:Flash:Auto:scene.turn_on::action",
+  },
+}, { device: "small-panel", slots: 2 });
+
+assert.strictEqual(crossDevicePlan.importedCount, 4, "cross-device import records source slot count");
+assert(crossDevicePlan.warnings.some((msg) => msg.includes("different panel")), "cross-device import warns on device mismatch");
+assert(crossDevicePlan.warnings.some((msg) => msg.includes("4 slots")), "cross-device import warns on slot adaptation");
+assert.deepStrictEqual(buttonShape(crossDevicePlan.buttons[0]), buttonShape({
+  entity: "weather.home",
+  label: "",
+  icon: "Auto",
+  icon_on: "Auto",
+  type: "weather",
+  precision: "tomorrow",
+}), "cross-device import preserves first used old slot");
+assert.deepStrictEqual(buttonShape(crossDevicePlan.buttons[1]), buttonShape({
+  entity: "light.kitchen",
+  label: "Kitchen",
+  icon: "Auto",
+  icon_on: "Lightbulb",
+}), "cross-device import fills remaining target slots in order");
+assert(crossDevicePlan.subpages["1"], "cross-device import remaps subpages to the new slot");
+
+throwsBackupMessage(
+  () => hooks.normalizeBackupConfig({ version: 999, buttons: [] }),
+  "Backup was created by a newer version of EspControl"
+);
+throwsBackupMessage(
+  () => hooks.normalizeBackupConfig({ version: 2, format: "other", buttons: [] }),
+  "Invalid config file - unsupported backup format"
+);
+throwsBackupMessage(
+  () => hooks.normalizeBackupConfig({ version: 2, buttons: [] }),
+  "Invalid config file - unsupported backup format"
+);
+throwsBackupMessage(
+  () => hooks.normalizeBackupConfig({ version: 1 }),
+  "Invalid config file - missing required fields"
+);
+assert.throws(() => JSON.parse("{"), SyntaxError, "malformed JSON still fails before contract validation");
+
+console.log("Backup contract tests passed.");

@@ -61,31 +61,18 @@ function init() {
 // ── Export / Import ────────────────────────────────────────────────────
 
 function exportConfig() {
-  var data = {
-    version: 1,
+  var data = createBackupConfig({
     device: DEVICE_ID,
+    slots: NUM_SLOTS,
     exported_at: new Date().toISOString(),
+    grid: state.grid,
+    sizes: state.sizes,
     button_order: serializeGrid(state.grid),
     button_on_color: state.onColor,
     button_off_color: state.offColor,
     sensor_card_color: state.sensorColor,
-    buttons: state.buttons.map(function (b) {
-      return {
-        entity: b.entity, label: b.label, icon: b.icon,
-        icon_on: b.icon_on, sensor: b.sensor, unit: b.unit,
-        type: b.type || "", precision: b.precision || "",
-        options: b.options || "",
-      };
-    }),
-    subpages: (function () {
-      var sp = {};
-      for (var k in state.subpages) {
-        if (state.subpages[k] && state.subpages[k].buttons && state.subpages[k].buttons.length > 0) {
-          sp[k] = serializeSubpageConfig(state.subpages[k]);
-        }
-      }
-      return sp;
-    })(),
+    buttons: state.buttons,
+    subpages: state.subpages,
     settings: {
       indoor_temp_enable: state._indoorOn,
       outdoor_temp_enable: state._outdoorOn,
@@ -129,7 +116,7 @@ function exportConfig() {
       schedule_dimmed_brightness: normalizeScheduleDimmedBrightness(state.scheduleDimmedBrightness),
       schedule_clock_brightness: normalizeScheduleClockBrightness(state.scheduleClockBrightness),
     },
-  };
+  });
 
   var json = JSON.stringify(data, null, 2);
   var blob = new Blob([json], { type: "application/json" });
@@ -177,143 +164,48 @@ function importConfig() {
         return;
       }
 
-      if (!data.version || !Array.isArray(data.buttons)) {
-        showBanner("Invalid config file \u2014 missing required fields", "error");
+      var backupPlan;
+      try {
+        backupPlan = planBackupImport(data, { device: DEVICE_ID, slots: NUM_SLOTS });
+      } catch (e) {
+        showBanner(e.backupMessage || "Invalid config file \u2014 missing required fields", "error");
         cleanupInput();
         return;
       }
-      if (data.device && data.device !== DEVICE_ID) {
-        showBanner("Config was exported from a different panel (" + data.device + ") \u2014 layout may look different", "warning");
-      }
-      var importedCount = data.buttons.length;
-      if (importedCount !== NUM_SLOTS) {
-        showBanner("Backup has " + importedCount + " slots, current config has " + NUM_SLOTS + " \u2014 adapting", "warning");
+      for (var warningIdx = 0; warningIdx < backupPlan.warnings.length; warningIdx++) {
+        showBanner(backupPlan.warnings[warningIdx], "warning");
       }
 
-      postText("Button On Color", data.button_on_color || "FF8C00");
-      postText("Button Off Color", data.button_off_color || "313131");
-      postText("Sensor Card Color", data.sensor_card_color || "212121");
-
-      var empty = { entity: "", label: "", icon: "Auto", icon_on: "Auto", sensor: "", unit: "", type: "", precision: "", options: "" };
-      var buttons, orderStr, spKeyMap, importedSizes;
-
-      if (importedCount !== NUM_SLOTS) {
-        // Grid dimensions differ — remap used buttons into target slots
-        var origParts = (data.button_order || "").split(",");
-        var usedSlots = [];
-        var seen = {};
-        for (var j = 0; j < origParts.length; j++) {
-          var tok = origParts[j].trim();
-          if (!tok) continue;
-          var lastCh = tok.charAt(tok.length - 1);
-          var parsedSize = sizeFromToken(lastCh);
-          var num = parseInt(tok, 10);
-          if (isNaN(num) || num < 1 || num > importedCount || seen[num]) continue;
-          seen[num] = true;
-          usedSlots.push({ oldSlot: num, size: parsedSize });
-        }
-        for (var j = 0; j < importedCount; j++) {
-          var sn = j + 1;
-          if (seen[sn]) continue;
-          var bb = data.buttons[j];
-          if (bb.entity || bb.label || bb.type) {
-            usedSlots.push({ oldSlot: sn, size: 1 });
-          }
-        }
-
-        var limit = Math.min(usedSlots.length, NUM_SLOTS);
-        var slotMap = {};
-        buttons = [];
-        var newSizes = {};
-        for (var j = 0; j < limit; j++) {
-          var ns = j + 1;
-          slotMap[usedSlots[j].oldSlot] = ns;
-          buttons.push(data.buttons[usedSlots[j].oldSlot - 1]);
-          if (usedSlots[j].size > 1) newSizes[ns] = usedSlots[j].size;
-        }
-        for (var j = limit; j < NUM_SLOTS; j++) buttons.push(empty);
-
-        var newGrid = [];
-        for (var j = 0; j < NUM_SLOTS; j++) newGrid.push(0);
-        var pos = 0;
-        for (var j = 0; j < limit && pos < NUM_SLOTS; j++) {
-          var ns = j + 1;
-          var targetSize = newSizes[ns] || 1;
-          if (!sizeFitsAt(pos, targetSize, NUM_SLOTS)) {
-            targetSize = 1;
-            delete newSizes[ns];
-          }
-          placeSlotAt(newGrid, ns, pos, targetSize);
-          pos++;
-          while (pos < NUM_SLOTS && newGrid[pos] === -1) pos++;
-        }
-
-        state.sizes = newSizes;
-        importedSizes = newSizes;
-        orderStr = serializeGrid(newGrid);
-
-        spKeyMap = {};
-        if (data.subpages) {
-          for (var k in data.subpages) {
-            var oldKey = parseInt(k, 10);
-            if (slotMap[oldKey]) spKeyMap[k] = slotMap[oldKey];
-          }
-        }
-      } else {
-        buttons = [];
-        for (var j = 0; j < NUM_SLOTS; j++) {
-          buttons.push(j < importedCount ? data.buttons[j] : empty);
-        }
-        importedSizes = {};
-        orderStr = data.button_order || "";
-        spKeyMap = {};
-        if (data.subpages) {
-          for (var k in data.subpages) {
-            var kn = parseInt(k, 10);
-            if (kn >= 1 && kn <= NUM_SLOTS) spKeyMap[k] = kn;
-          }
-        }
-      }
+      postText("Button On Color", backupPlan.config.button_on_color);
+      postText("Button Off Color", backupPlan.config.button_off_color);
+      postText("Sensor Card Color", backupPlan.config.sensor_card_color);
 
       for (var i = 0; i < NUM_SLOTS; i++) {
-        var b = buttons[i];
+        var b = backupPlan.buttons[i];
         var n = i + 1;
-        state.buttons[i] = normalizeButtonConfig({
-          entity: b.entity || "", label: b.label || "",
-          icon: b.icon || "Auto", icon_on: b.icon_on || "Auto",
-          sensor: b.sensor || "", unit: b.unit || "",
-          type: b.type || "", precision: b.precision || "",
-          options: b.options || "",
-        });
+        state.buttons[i] = backupNormalizeButtonConfig(b);
         saveButtonConfig(n);
       }
 
       state.subpages = {};
       state.subpageRaw = {};
-      if (data.subpages) {
-        for (var k in data.subpages) {
-          var newKey = spKeyMap[k];
-          if (!newKey) continue;
-          var sp = parseSubpageConfig(data.subpages[k]);
-          sp.sizes = {};
-          buildSubpageGrid(sp);
-          state.subpages[String(newKey)] = sp;
-          saveSubpageEntity(newKey);
-        }
+      for (var subpageKey in backupPlan.subpages) {
+        state.subpages[subpageKey] = backupPlan.subpages[subpageKey];
+        saveSubpageEntity(subpageKey);
       }
 
-      postText("Button Order", orderStr);
-      applyImportedButtonOrder(orderStr, importedSizes);
-      state.onColor = data.button_on_color || "FF8C00";
-      state.offColor = data.button_off_color || "313131";
-      state.sensorColor = data.sensor_card_color || "212121";
+      postText("Button Order", backupPlan.button_order);
+      applyImportedButtonOrder(backupPlan.button_order, backupPlan.importedSizes);
+      state.onColor = backupPlan.config.button_on_color;
+      state.offColor = backupPlan.config.button_off_color;
+      state.sensorColor = backupPlan.config.sensor_card_color;
 
       if (els.setOnColor && els.setOnColor._syncColor) els.setOnColor._syncColor(state.onColor);
       if (els.setOffColor && els.setOffColor._syncColor) els.setOffColor._syncColor(state.offColor);
       if (els.setSensorColor && els.setSensorColor._syncColor) els.setSensorColor._syncColor(state.sensorColor);
 
-      if (data.settings) {
-        var s = data.settings;
+      if (backupPlan.settings) {
+        var s = backupPlan.settings;
 
         postSwitch("Indoor Temp Enable", !!s.indoor_temp_enable);
         postSwitch("Outdoor Temp Enable", !!s.outdoor_temp_enable);
@@ -457,7 +349,7 @@ function importConfig() {
 
       }
 
-      var screenSettings = data.screen || (data.settings && data.settings.screen);
+      var screenSettings = backupPlan.screen;
       if (screenSettings) {
         state.brightnessDayVal = parseFloat(screenSettings.brightness_day);
         if (!isFinite(state.brightnessDayVal)) state.brightnessDayVal = 100;
@@ -1244,6 +1136,11 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
   globalThis.__ESPCONTROL_TEST_HOOKS__.config = {
     parseButtonConfig: parseButtonConfig,
     serializeButtonConfig: serializeButtonConfig,
+    BACKUP_CONFIG_VERSION: BACKUP_CONFIG_VERSION,
+    BACKUP_FORMAT: BACKUP_FORMAT,
+    createBackupConfig: createBackupConfig,
+    normalizeBackupConfig: normalizeBackupConfig,
+    planBackupImport: planBackupImport,
     switchConfirmationEnabled: switchConfirmationEnabled,
     switchConfirmationMode: switchConfirmationMode,
     switchConfirmationMessage: switchConfirmationMessage,
