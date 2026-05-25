@@ -38,7 +38,7 @@ var LOCK_CARD_METADATA = {
     label: "Entity",
     idSuffix: "entity",
     placeholder: "e.g. lock.front_door",
-    domains: ["lock"],
+    domains: function () { return cardContractDomains("lock"); },
     bindName: "entity",
     rerender: true,
     requiredMessage: "Add an entity before saving.",
@@ -55,9 +55,13 @@ var LOCK_CARD_METADATA = {
 };
 
 registerButtonType("lock", {
-  label: "Lock",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("lock"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("lock"); },
+  pickerKey: function () { return cardContractPickerKey("lock"); },
+  experimental: function () { return cardContractExperimental("lock"); },
+  hidden: function () { return cardContractHidden("lock"); },
   hideLabel: true,
+  defaultConfig: function () { return cardContractDefaultConfig("lock"); },
   cardMetadata: LOCK_CARD_METADATA,
   onSelect: function (b) {
     b.label = "";

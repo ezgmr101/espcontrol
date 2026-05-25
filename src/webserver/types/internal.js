@@ -85,10 +85,14 @@ var INTERNAL_CARD_METADATA = {
 };
 
 registerButtonType("internal", {
-  label: "Internal Switches",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("internal"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("internal"); },
+  pickerKey: function () { return cardContractPickerKey("internal"); },
+  experimental: function () { return cardContractExperimental("internal"); },
+  hidden: function () { return cardContractHidden("internal"); },
   hideLabel: true,
   labelPlaceholder: "e.g. Porch Light",
+  defaultConfig: function () { return cardContractDefaultConfig("internal"); },
   cardMetadata: INTERNAL_CARD_METADATA,
   isAvailable: function () {
     return internalRelayOptions().length > 0;

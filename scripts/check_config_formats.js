@@ -263,6 +263,10 @@ assertButtonTypeSpecBacked("light_temperature", "light temperature card");
 assertButtonTypeSpecBacked("calendar", "calendar card");
 assertButtonTypeSpecBacked("timezone", "timezone card");
 assertButtonTypeSpecBacked("weather", "weather card");
+assertButtonTypeSpecBacked("push", "push card");
+assertButtonTypeSpecBacked("internal", "internal relay card");
+assertButtonTypeSpecBacked("garage", "garage card");
+assertButtonTypeSpecBacked("lock", "lock card");
 const coverOptionSpecs = hooks.cardContractOptions("cover");
 const coverOptionByName = Object.fromEntries(coverOptionSpecs.map((option) => [option.name, option]));
 assert.deepStrictEqual(

@@ -45,7 +45,7 @@ var GARAGE_CARD_METADATA = {
     label: "Entity",
     idSuffix: "entity",
     placeholder: "e.g. cover.garage_door",
-    domains: ["cover"],
+    domains: function () { return cardContractDomains("garage"); },
     bindName: "entity",
     rerender: true,
     requiredMessage: "Add an entity before saving.",
@@ -62,9 +62,13 @@ var GARAGE_CARD_METADATA = {
 };
 
 registerButtonType("garage", {
-  label: "Garage Door",
-  allowInSubpage: true,
+  label: function () { return cardContractCardLabel("garage"); },
+  allowInSubpage: function () { return cardContractAllowInSubpage("garage"); },
+  pickerKey: function () { return cardContractPickerKey("garage"); },
+  experimental: function () { return cardContractExperimental("garage"); },
+  hidden: function () { return cardContractHidden("garage"); },
   hideLabel: true,
+  defaultConfig: function () { return cardContractDefaultConfig("garage"); },
   cardMetadata: GARAGE_CARD_METADATA,
   onSelect: function (b) {
     b.label = "";
