@@ -19,11 +19,18 @@ FORBIDDEN_ALLOCATIONS = (
 LAYER_TOP_ALLOWLIST = {
     "button_grid_modal.h",
 }
+MANUAL_OVERLAY_DELETE_ALLOWLIST = {
+    "button_grid_modal.h",
+    "button_grid_alarm.h",
+    "button_grid_climate.h",
+    "button_grid_sliders.h",
+}
 
 
 def firmware_modal_errors(firmware_dir: Path, root: Path) -> list[str]:
     allocation_pattern = re.compile(r"\bnew\s+(" + "|".join(FORBIDDEN_ALLOCATIONS) + r")\b")
     layer_top_pattern = re.compile(r"\blv_obj_create\s*\(\s*lv_layer_top\s*\(\s*\)\s*\)")
+    manual_overlay_delete_pattern = re.compile(r"\blv_obj_del\s*\(\s*(?:ui\.)?(?:menu_)?overlay\s*\)")
     errors: list[str] = []
 
     for path in sorted(firmware_dir.glob("button_grid*.h")):
@@ -38,6 +45,11 @@ def firmware_modal_errors(firmware_dir: Path, root: Path) -> list[str]:
                 rel = path.relative_to(root)
                 errors.append(
                     f"{rel}:{line_no}: open modal overlays through button_grid_modal.h helpers"
+                )
+            if path.name not in MANUAL_OVERLAY_DELETE_ALLOWLIST and manual_overlay_delete_pattern.search(line):
+                rel = path.relative_to(root)
+                errors.append(
+                    f"{rel}:{line_no}: delete modal overlays through button_grid_modal.h lifecycle helpers"
                 )
     return errors
 
@@ -84,6 +96,16 @@ def run_self_test() -> int:
     expect_errors(
         "shared helpers",
         {"button_grid_modal.h": "lv_obj_t *overlay = lv_obj_create(lv_layer_top());\n"},
+        (),
+    )
+    expect_errors(
+        "manual overlay delete",
+        {"button_grid_media.h": "if (ui.overlay) lv_obj_del(ui.overlay);\n"},
+        ("delete modal overlays through button_grid_modal.h lifecycle helpers",),
+    )
+    expect_errors(
+        "shared delete helper",
+        {"button_grid_media.h": "control_modal_delete_overlay(ControlModalKind::MEDIA_VOLUME, ui.overlay);\n"},
         (),
     )
     print("Firmware modal allocation self-tests passed.")
