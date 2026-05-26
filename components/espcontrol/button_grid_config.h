@@ -213,12 +213,11 @@ inline std::string door_window_card_options_normalized(const std::string &option
 }
 
 inline std::string normalize_climate_label_display(const std::string &value) {
-  return (value == "status" || value == "actual" || value == "target") ? value : "label";
+  return card_runtime_climate_label_display(value);
 }
 
 inline std::string normalize_climate_number_display(const std::string &value) {
-  if (value == "icon") return "icon";
-  return value == "actual" ? "actual" : "target";
+  return card_runtime_climate_number_display(value);
 }
 
 inline std::string climate_card_options_normalized(const std::string &options) {
@@ -234,7 +233,7 @@ inline std::string climate_card_options_normalized(const std::string &options) {
 }
 
 inline std::string normalize_garage_label_display(const std::string &value) {
-  return value == "status" ? "status" : "label";
+  return card_runtime_garage_label_display(value);
 }
 
 inline std::string garage_card_options_normalized(const std::string &options,
@@ -246,29 +245,23 @@ inline std::string garage_card_options_normalized(const std::string &options,
 }
 
 inline bool alarm_action_mode_valid(const std::string &mode) {
-  return mode == "away" || mode == "home" || mode == "disarm";
+  return card_runtime_alarm_action_mode_valid(mode);
 }
 
 inline const char *alarm_action_icon_name(const std::string &mode) {
-  if (mode == "away") return "Shield Lock";
-  if (mode == "home") return "Shield Home";
-  if (mode == "disarm") return "Shield Off";
-  return "Alarm";
+  return card_runtime_alarm_action_icon_name(mode);
 }
 
 inline bool alarm_action_legacy_icon_name(const std::string &mode, const std::string &icon) {
-  if (mode == "away") return icon == "Security";
-  if (mode == "home") return icon == "Home";
-  if (mode == "disarm") return icon == "Lock Open";
-  return false;
+  return card_runtime_alarm_action_legacy_icon_name(mode, icon);
 }
 
 inline std::string normalize_alarm_icon_display(const std::string &value) {
-  return value == "static" ? "static" : "status";
+  return card_runtime_alarm_icon_display(value);
 }
 
 inline std::string normalize_alarm_label_display(const std::string &value) {
-  return value == "name" ? "name" : "status";
+  return card_runtime_alarm_label_display(value);
 }
 
 inline std::string alarm_card_options_normalized(const std::string &options) {
@@ -338,13 +331,11 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
   if (p.type == "media") {
     if (p.sensor == "controls") {
       if (p.icon.empty() || p.icon == "Speaker") p.icon = "Auto";
-      p.sensor = "play_pause";
+      p.sensor = card_runtime_media_mode(p.sensor);
     } else if (p.sensor.empty()) {
-      p.sensor = "play_pause";
-    } else if (p.sensor != "play_pause" && p.sensor != "previous" &&
-               p.sensor != "next" && p.sensor != "volume" &&
-               p.sensor != "position" && p.sensor != "now_playing") {
-      p.sensor = "play_pause";
+      p.sensor = card_runtime_media_mode(p.sensor);
+    } else {
+      p.sensor = card_runtime_media_mode(p.sensor);
     }
     if (p.sensor == "previous" && p.label == "Skip Previous") p.label = "Previous";
     if (p.sensor == "next" && p.label == "Skip Next") p.label = "Next";
@@ -354,8 +345,8 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     }
     if (p.sensor == "position" && (p.label.empty() || p.label == "Track")) p.label = "Position";
     if (p.sensor == "now_playing") {
-      p.precision = (p.precision == "progress" || p.precision == "play_pause") ? p.precision : "";
-    } else if ((p.sensor == "play_pause" || p.sensor == "position") && p.precision == "state") {
+      p.precision = card_runtime_media_now_playing_control(p.precision) ? p.precision : "";
+    } else if (card_runtime_media_state_display_mode(p.sensor) && p.precision == "state") {
       p.precision = "state";
     } else {
       p.precision.clear();
@@ -368,7 +359,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     p.options = climate_card_options_normalized(p.options);
   }
   if (p.type == "garage") {
-    if (p.sensor != "open" && p.sensor != "close") p.sensor.clear();
+    if (!card_runtime_garage_mode_valid(p.sensor)) p.sensor.clear();
     p.unit.clear();
     p.precision.clear();
     if (!p.sensor.empty()) p.icon_on.clear();
@@ -1001,7 +992,7 @@ inline const char* garage_open_icon(const std::string &icon_on) {
 }
 
 inline bool garage_command_mode(const std::string &sensor) {
-  return sensor == "open" || sensor == "close";
+  return card_runtime_garage_command_mode(sensor);
 }
 
 inline const char *garage_command_icon(const ParsedCfg &p) {
@@ -1038,7 +1029,7 @@ inline const char* lock_unlocked_icon(const std::string &icon_on) {
 }
 
 inline bool lock_command_mode(const std::string &sensor) {
-  return sensor == "lock" || sensor == "unlock";
+  return card_runtime_lock_command_mode(sensor);
 }
 
 inline const char *lock_command_icon(const ParsedCfg &p) {
@@ -1135,7 +1126,7 @@ inline InternalRelayControl *find_internal_relay(const std::string &key) {
 }
 
 inline bool internal_relay_push_mode(const ParsedCfg &p) {
-  return p.sensor == "push";
+  return card_runtime_internal_push_mode(p.sensor);
 }
 
 inline bool internal_relay_state(const std::string &key) {

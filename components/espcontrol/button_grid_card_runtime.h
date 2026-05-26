@@ -50,3 +50,107 @@ inline bool card_runtime_large_numbers_supported(const std::string &type,
                                                  const std::string &precision) {
   return card_contract_large_numbers_supported(type, precision);
 }
+
+inline bool card_runtime_cover_mode_valid(const std::string &mode) {
+  return card_contract_cover_mode_valid(mode);
+}
+
+inline bool card_runtime_cover_toggle_mode(const std::string &mode) {
+  return mode == "toggle" && card_runtime_cover_mode_valid(mode);
+}
+
+inline bool card_runtime_cover_tilt_mode(const std::string &mode) {
+  return mode == "tilt" && card_runtime_cover_mode_valid(mode);
+}
+
+inline bool card_runtime_cover_command_mode(const std::string &mode) {
+  return card_runtime_cover_mode_valid(mode) &&
+         mode != "" && mode != "toggle" && mode != "tilt";
+}
+
+inline bool card_runtime_garage_mode_valid(const std::string &mode) {
+  return card_contract_garage_mode_valid(mode);
+}
+
+inline bool card_runtime_garage_command_mode(const std::string &mode) {
+  return card_runtime_garage_mode_valid(mode) && !mode.empty();
+}
+
+inline std::string card_runtime_garage_label_display(const std::string &value) {
+  return card_contract_garage_label_display_valid(value)
+    ? value
+    : CARD_CONTRACT_GARAGE_LABEL_DISPLAY_DEFAULT;
+}
+
+inline bool card_runtime_lock_mode_valid(const std::string &mode) {
+  return card_contract_lock_mode_valid(mode);
+}
+
+inline bool card_runtime_lock_command_mode(const std::string &mode) {
+  return card_runtime_lock_mode_valid(mode) && !mode.empty();
+}
+
+inline bool card_runtime_internal_push_mode(const std::string &mode) {
+  return mode == "push" && card_contract_internal_mode_valid(mode);
+}
+
+inline std::string card_runtime_media_mode(const std::string &mode) {
+  if (card_contract_media_mode_valid(mode)) return mode;
+  if (card_contract_media_legacy_mode(mode)) return CARD_CONTRACT_MEDIA_DEFAULT_MODE;
+  return CARD_CONTRACT_MEDIA_DEFAULT_MODE;
+}
+
+inline bool card_runtime_media_playback_button_mode(const std::string &mode) {
+  std::string normalized = card_runtime_media_mode(mode);
+  return normalized == "play_pause" || normalized == "previous" || normalized == "next";
+}
+
+inline bool card_runtime_media_state_display_mode(const std::string &mode) {
+  return card_contract_media_state_display_mode(card_runtime_media_mode(mode));
+}
+
+inline bool card_runtime_media_now_playing_control(const std::string &precision) {
+  return card_contract_string_in(precision, CARD_CONTRACT_MEDIA_NOW_PLAYING_CONTROLS,
+    sizeof(CARD_CONTRACT_MEDIA_NOW_PLAYING_CONTROLS) / sizeof(CARD_CONTRACT_MEDIA_NOW_PLAYING_CONTROLS[0]));
+}
+
+inline bool card_runtime_alarm_action_mode_valid(const std::string &mode) {
+  return card_contract_alarm_action_mode_valid(mode);
+}
+
+inline const char *card_runtime_alarm_action_icon_name(const std::string &mode) {
+  return card_contract_alarm_action_icon_name(mode);
+}
+
+inline bool card_runtime_alarm_action_legacy_icon_name(const std::string &mode,
+                                                       const std::string &icon) {
+  return card_contract_alarm_action_legacy_icon_name(mode, icon);
+}
+
+inline std::string card_runtime_alarm_icon_display(const std::string &value) {
+  return card_contract_alarm_icon_display_valid(value)
+    ? value
+    : CARD_CONTRACT_ALARM_ICON_DISPLAY_DEFAULT;
+}
+
+inline std::string card_runtime_alarm_label_display(const std::string &value) {
+  return card_contract_alarm_label_display_valid(value)
+    ? value
+    : CARD_CONTRACT_ALARM_LABEL_DISPLAY_DEFAULT;
+}
+
+inline std::string card_runtime_climate_label_display(const std::string &value) {
+  return card_contract_climate_label_display_valid(value)
+    ? value
+    : CARD_CONTRACT_CLIMATE_LABEL_DISPLAY_DEFAULT;
+}
+
+inline std::string card_runtime_climate_number_display(const std::string &value) {
+  return card_contract_climate_number_display_valid(value)
+    ? value
+    : CARD_CONTRACT_CLIMATE_NUMBER_DISPLAY_DEFAULT;
+}
+
+inline bool card_runtime_weather_forecast_precision(const std::string &precision) {
+  return card_contract_weather_forecast_precision(precision);
+}

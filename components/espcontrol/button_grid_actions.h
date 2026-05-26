@@ -91,16 +91,15 @@ inline bool is_fan_entity(const std::string &entity_id) {
 }
 
 inline bool cover_toggle_mode(const std::string &sensor) {
-  return sensor == "toggle";
+  return card_runtime_cover_toggle_mode(sensor);
 }
 
 inline bool cover_tilt_mode(const std::string &sensor) {
-  return sensor == "tilt";
+  return card_runtime_cover_tilt_mode(sensor);
 }
 
 inline bool cover_command_mode(const std::string &sensor) {
-  return sensor == "open" || sensor == "close" ||
-         sensor == "stop" || sensor == "set_position";
+  return card_runtime_cover_command_mode(sensor);
 }
 
 inline const char *cover_command_service(const std::string &sensor) {
@@ -248,16 +247,11 @@ inline const char *light_temp_icon(const std::string &icon) {
 }
 
 inline std::string media_card_mode(const std::string &sensor) {
-  if (sensor == "volume" || sensor == "position" ||
-      sensor == "now_playing" || sensor == "play_pause" ||
-      sensor == "previous" || sensor == "next")
-    return sensor;
-  if (sensor == "controls") return "play_pause";
-  return "play_pause";
+  return card_runtime_media_mode(sensor);
 }
 
 inline bool media_playback_button_mode(const std::string &mode) {
-  return mode == "play_pause" || mode == "previous" || mode == "next";
+  return card_runtime_media_playback_button_mode(mode);
 }
 
 inline const char *media_service_for_mode(const std::string &mode) {
