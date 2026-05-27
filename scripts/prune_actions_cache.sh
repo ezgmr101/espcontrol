@@ -85,6 +85,11 @@ is_protected() {
         return 0
         ;;
     esac
+    case "$protected" in
+      "$entry"|"$entry"/*)
+        return 0
+        ;;
+    esac
   done
   return 1
 }
