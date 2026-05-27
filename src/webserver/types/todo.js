@@ -43,6 +43,7 @@ registerButtonType("todo", {
   pickerKey: function () { return cardContractPickerKey("todo"); },
   experimental: function () { return cardContractExperimental("todo"); },
   hidden: function () { return cardContractHidden("todo"); },
+  hideLabel: true,
   defaultConfig: function () { return cardContractDefaultConfig("todo"); },
   cardMetadata: TODO_CARD_METADATA,
   onSelect: function (b) {
