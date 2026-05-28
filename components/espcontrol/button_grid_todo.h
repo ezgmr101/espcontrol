@@ -7,7 +7,6 @@
 constexpr uint32_t TODO_CARD_CTX_MAGIC = 0x544F444F;  // TODO
 constexpr int TODO_MAX_ITEMS = 8;
 constexpr size_t TODO_RESPONSE_TEXT_MAX_LEN = 1536;
-constexpr uint32_t TODO_ITEMS_REQUEST_TIMEOUT_MS = 10000;
 
 struct TodoItem {
   std::string key;
@@ -46,9 +45,7 @@ struct TodoModalUi {
   lv_obj_t *title_lbl = nullptr;
   lv_obj_t *list = nullptr;
   lv_obj_t *status_lbl = nullptr;
-  lv_timer_t *loading_timer = nullptr;
   TodoCardCtx *active = nullptr;
-  uint32_t loading_call_id = 0;
   TodoItemClick item_clicks[TODO_MAX_ITEMS];
 };
 
@@ -147,18 +144,8 @@ inline std::string todo_item_action_key(const TodoItem &item) {
   return item.key.empty() ? item.summary : item.key;
 }
 
-inline void todo_modal_cancel_loading_timer() {
-  TodoModalUi &ui = todo_modal_ui();
-  ui.loading_call_id = 0;
-  if (ui.loading_timer) {
-    lv_timer_del(ui.loading_timer);
-    ui.loading_timer = nullptr;
-  }
-}
-
 inline void todo_modal_hide() {
   TodoModalUi &ui = todo_modal_ui();
-  todo_modal_cancel_loading_timer();
   control_modal_delete_overlay(ControlModalKind::TODO_LIST, ui.overlay);
   ui = TodoModalUi();
 }
@@ -180,30 +167,6 @@ inline void todo_modal_set_status(const char *text) {
   lv_label_set_text(ui.status_lbl, text ? text : "");
   if (wants_visible) lv_obj_clear_flag(ui.status_lbl, LV_OBJ_FLAG_HIDDEN);
   else lv_obj_add_flag(ui.status_lbl, LV_OBJ_FLAG_HIDDEN);
-}
-
-inline void todo_modal_loading_timeout_cb(lv_timer_t *timer) {
-  TodoModalUi &ui = todo_modal_ui();
-  if (ui.loading_timer != timer) {
-    lv_timer_del(timer);
-    return;
-  }
-  TodoCardCtx *ctx = ui.active;
-  ui.loading_timer = nullptr;
-  ui.loading_call_id = 0;
-  if (todo_card_context_valid(ctx)) {
-    ESP_LOGW("todo", "Todo request timed out for %s",
-      ctx->entity_id.empty() ? "todo" : ctx->entity_id.c_str());
-    todo_modal_set_status("Could not load");
-  }
-  lv_timer_del(timer);
-}
-
-inline void todo_modal_start_loading_timer(uint32_t call_id) {
-  todo_modal_cancel_loading_timer();
-  TodoModalUi &ui = todo_modal_ui();
-  ui.loading_call_id = call_id;
-  ui.loading_timer = lv_timer_create(todo_modal_loading_timeout_cb, TODO_ITEMS_REQUEST_TIMEOUT_MS, nullptr);
 }
 
 inline void todo_modal_clear_items() {
@@ -413,14 +376,11 @@ inline void request_todo_items(TodoCardCtx *ctx) {
   std::string response_template = todo_items_response_template(ctx->entity_id);
   req.response_template = decltype(req.response_template)(response_template);
   ha_action_add_entity(req, ctx->entity_id);
-  todo_modal_start_loading_timer(call_id);
 
-  bool registered = ha_register_action_response_callback(
+  ha_register_action_response_callback(
     req.call_id,
-    [ctx, call_id](const esphome::api::ActionResponse &response) {
-      TodoModalUi &ui = todo_modal_ui();
-      if (ui.active != ctx || ui.loading_call_id != call_id) return;
-      todo_modal_cancel_loading_timer();
+    [ctx](const esphome::api::ActionResponse &response) {
+      if (todo_modal_ui().active != ctx) return;
       if (!response.is_success()) {
         ESP_LOGW("todo", "Todo request failed for %s: %s",
           ctx && !ctx->entity_id.empty() ? ctx->entity_id.c_str() : "todo",
@@ -438,10 +398,7 @@ inline void request_todo_items(TodoCardCtx *ctx) {
         parse_todo_response_payload(std::string(payload).substr(0, TODO_RESPONSE_TEXT_MAX_LEN));
       todo_modal_render_items(ctx, items);
     });
-  if (!registered || !ha_action_send(req)) {
-    todo_modal_cancel_loading_timer();
-    todo_modal_set_status("Could not load");
-  }
+  ha_action_send(req);
 }
 
 inline void todo_card_open_modal(TodoCardCtx *ctx) {
