@@ -12,6 +12,7 @@ from tempfile import TemporaryDirectory
 ROOT = Path(__file__).resolve().parents[1]
 FIRMWARE_DIR = ROOT / "components" / "espcontrol"
 CORE_INFRA_PATH = ROOT / "common" / "device" / "core_infra.yaml"
+S3_DEVICE_PATH = ROOT / "devices" / "guition-esp32-s3-4848s040" / "device" / "device.yaml"
 HA_BOUNDARY_ALLOWLIST = {
     "button_grid_ha.h",
 }
@@ -207,6 +208,23 @@ def firmware_cover_request_errors(firmware_dir: Path, core_infra_path: Path, roo
     return errors
 
 
+def firmware_s3_api_errors(device_path: Path, root: Path) -> list[str]:
+    if not device_path.exists():
+        return []
+    rel = device_path.relative_to(root)
+    text = device_path.read_text(encoding="utf-8")
+    errors: list[str] = []
+
+    queue_match = re.search(r"(?m)^\s*max_send_queue:\s*(\d+)\s*$", text)
+    if not queue_match:
+        errors.append(f"{rel}: set an explicit S3 native API send queue")
+    elif int(queue_match.group(1)) < 12:
+        errors.append(f"{rel}: keep the S3 native API send queue high enough for HA reconnect bursts")
+    if "max_connections: 2" not in text:
+        errors.append(f"{rel}: keep the S3 native API connection pool small")
+    return errors
+
+
 def run_scan() -> int:
     errors = firmware_ha_binding_errors(FIRMWARE_DIR, ROOT)
     errors.extend(firmware_ha_boundary_errors(FIRMWARE_DIR, ROOT))
@@ -215,6 +233,7 @@ def run_scan() -> int:
     errors.extend(firmware_weather_request_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_weather_disconnect_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
     errors.extend(firmware_cover_request_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
+    errors.extend(firmware_s3_api_errors(S3_DEVICE_PATH, ROOT))
     if errors:
         print("Firmware Home Assistant binding check failed:")
         for error in errors:
@@ -342,6 +361,20 @@ def expect_cover_request_errors(
         core_path.write_text(core_text, encoding="utf-8")
 
         errors = firmware_cover_request_errors(firmware_dir, core_path, root)
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
+def expect_s3_api_errors(name: str, text: str, expected: tuple[str, ...]) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        device_path = root / "devices" / "guition-esp32-s3-4848s040" / "device" / "device.yaml"
+        device_path.parent.mkdir(parents=True)
+        device_path.write_text(text, encoding="utf-8")
+
+        errors = firmware_s3_api_errors(device_path, root)
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -581,6 +614,11 @@ def run_self_test() -> int:
         "}\n",
         "api:\n  on_client_connected:\n    - lambda: refresh_weather_forecast_cards();\n",
         ("cancel pending cover stop callbacks when the HA API disconnects",),
+    )
+    expect_s3_api_errors(
+        "low S3 API queue",
+        "api:\n  max_connections: 2\n  max_send_queue: 8\n",
+        ("keep the S3 native API send queue high enough",),
     )
     print("Firmware Home Assistant binding self-tests passed.")
     return 0
