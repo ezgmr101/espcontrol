@@ -1,6 +1,7 @@
 {
   "name": "espcontrol",
   "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "check:all": "npm run check:ci && npm run docs:build",
     "check:backup-contract": "node scripts/check_backup_contract.js",
