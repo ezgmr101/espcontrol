@@ -13,6 +13,7 @@ constexpr uint32_t TODO_COMPLETED_CHECK_COLOR = 0xC0C0C0;
 struct TodoItem {
   std::string key;
   std::string summary;
+  bool completed = false;
   bool more = false;
 };
 
@@ -155,11 +156,16 @@ inline std::vector<TodoItem> parse_todo_response_payload(const std::string &payl
     std::string line = payload.substr(start, end - start);
     if (!line.empty()) {
       size_t sep = line.find('|');
+      size_t sep2 = sep == std::string::npos ? std::string::npos : line.find('|', sep + 1);
       std::string key = sep == std::string::npos ? line : line.substr(0, sep);
-      std::string summary = sep == std::string::npos ? line : line.substr(sep + 1);
+      std::string summary = sep == std::string::npos
+        ? line
+        : sep2 == std::string::npos ? line.substr(sep + 1) : line.substr(sep + 1, sep2 - sep - 1);
+      std::string status = sep2 == std::string::npos ? "" : line.substr(sep2 + 1);
       TodoItem item;
       item.key = todo_percent_decode(key);
       item.summary = todo_percent_decode(summary);
+      item.completed = todo_percent_decode(status) == "completed";
       item.more = item.key == "__MORE__";
       items.push_back(item);
     }
@@ -198,6 +204,10 @@ inline bool todo_completed_contains(const TodoModalUi &ui, const TodoItem &item)
   return false;
 }
 
+inline bool todo_item_completed(const TodoModalUi &ui, const TodoItem &item) {
+  return item.completed || todo_completed_contains(ui, item);
+}
+
 inline void todo_completed_remove(const TodoItem &item) {
   TodoModalUi &ui = todo_modal_ui();
   std::vector<TodoItem> kept;
@@ -214,6 +224,20 @@ inline void todo_completed_add(const TodoItem &item) {
   if (todo_completed_contains(ui, item)) return;
   ui.completed_items.push_back(item);
   while (ui.completed_items.size() > TODO_MAX_ITEMS) ui.completed_items.erase(ui.completed_items.begin());
+}
+
+inline bool todo_items_include_completed(const std::vector<TodoItem> &items) {
+  for (const auto &item : items) {
+    if (!item.more && item.completed) return true;
+  }
+  return false;
+}
+
+inline void todo_visible_item_set_completed(const TodoItem &item, bool completed) {
+  TodoModalUi &ui = todo_modal_ui();
+  for (auto &visible : ui.visible_items) {
+    if (todo_items_match(visible, item)) visible.completed = completed;
+  }
 }
 
 inline void todo_modal_hide() {
@@ -381,7 +405,7 @@ inline void todo_modal_render_items(TodoCardCtx *ctx, const std::vector<TodoItem
   if (ctx->show_top_task) {
     std::vector<TodoItem> top_items;
     for (const auto &item : items) {
-      if (item.more || todo_completed_contains(ui, item)) continue;
+      if (item.more || todo_item_completed(ui, item)) continue;
       top_items.push_back(item);
       break;
     }
@@ -390,10 +414,12 @@ inline void todo_modal_render_items(TodoCardCtx *ctx, const std::vector<TodoItem
 
   bool has_visible_item = false;
   for (const auto &item : items) {
-    if (item.more || !todo_completed_contains(ui, item)) has_visible_item = true;
+    if (item.more || !todo_item_completed(ui, item)) has_visible_item = true;
   }
 
-  if (!has_visible_item && (ui.completed_items.empty() || !ctx->show_completed_items)) {
+  if (!has_visible_item &&
+      (!ctx->show_completed_items ||
+       (ui.completed_items.empty() && !todo_items_include_completed(items)))) {
     todo_modal_set_status("All done");
     return;
   }
@@ -409,7 +435,7 @@ inline void todo_modal_render_items(TodoCardCtx *ctx, const std::vector<TodoItem
   if (content_w <= 0) content_w = layout.panel_w - layout.inset * 2;
   int click_index = 0;
   for (const auto &item : items) {
-    if (!item.more && todo_completed_contains(ui, item)) continue;
+    if (!item.more && todo_item_completed(ui, item)) continue;
     if (item.more) {
       std::string label = item.summary.empty() ? "More items" : item.summary + " more";
       todo_modal_create_list_item_row(
@@ -437,7 +463,29 @@ inline void todo_modal_render_items(TodoCardCtx *ctx, const std::vector<TodoItem
     click_index++;
   }
 
-  if (ctx->show_completed_items && !ui.completed_items.empty()) {
+  if (ctx->show_completed_items &&
+      (!ui.completed_items.empty() || todo_items_include_completed(items))) {
+    for (const auto &item : items) {
+      if (item.more || !item.completed || todo_completed_contains(ui, item)) continue;
+      if (click_index >= TODO_MAX_ITEMS) break;
+      lv_obj_t *row = todo_modal_create_list_item_row(
+        ui.list, item.summary.empty() ? "(untitled)" : item.summary,
+        true, true, true, true, row_h, content_w, checkbox_size, item_gap,
+        ctx->accent_color, ctx->label_font, ctx->icon_font,
+        ctx->width_compensation_percent);
+      ui.item_clicks[click_index].ctx = ctx;
+      ui.item_clicks[click_index].item = item;
+      lv_obj_add_event_cb(row, [](lv_event_t *e) {
+        TodoItemClick *click = (TodoItemClick *)lv_event_get_user_data(e);
+        if (!click || !click->ctx) return;
+        TodoCardCtx *click_ctx = click->ctx;
+        TodoItem item = click->item;
+        todo_visible_item_set_completed(item, false);
+        todo_modal_render_items(click_ctx, todo_modal_ui().visible_items);
+        send_todo_restore_action(click_ctx, item);
+      }, LV_EVENT_CLICKED, &ui.item_clicks[click_index]);
+      click_index++;
+    }
     for (const auto &completed : ui.completed_items) {
       if (click_index >= TODO_MAX_ITEMS) break;
       lv_obj_t *row = todo_modal_create_list_item_row(
@@ -467,11 +515,12 @@ inline std::string todo_items_response_template(const std::string &entity_id) {
     "{% set ns = namespace(count=0, out='') %}"
     "{% macro esc(v) -%}{{ (v|string)|replace('%','%25')|replace('|','%7C')|replace('\\n','%0A')|replace('\\r','%0D') }}{%- endmacro %}"
     "{% for item in items %}"
-    "{% if item.status is not defined or item.status == 'needs_action' %}"
+    "{% if item.status is not defined or item.status == 'needs_action' or item.status == 'completed' %}"
     "{% if ns.count < " + std::to_string(TODO_MAX_ITEMS) + " %}"
     "{% set summary = item.summary if item.summary is defined else '' %}"
     "{% set key = item.uid if item.uid is defined and item.uid else summary %}"
-    "{% set ns.out = ns.out ~ ('\\n' if ns.out else '') ~ esc(key) ~ '|' ~ esc(summary) %}"
+    "{% set status = item.status if item.status is defined else 'needs_action' %}"
+    "{% set ns.out = ns.out ~ ('\\n' if ns.out else '') ~ esc(key) ~ '|' ~ esc(summary) ~ '|' ~ esc(status) %}"
     "{% endif %}"
     "{% set ns.count = ns.count + 1 %}"
     "{% endif %}"
