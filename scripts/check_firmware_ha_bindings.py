@@ -154,6 +154,26 @@ def firmware_weather_request_errors(firmware_dir: Path, root: Path) -> list[str]
         errors.append(f"{rel}: wait for Home Assistant state subscription before automatic forecast requests")
     if "ha_cancel_action_response_callback(req.call_id" not in text:
         errors.append(f"{rel}: cancel forecast response callbacks when sends fail")
+    if "WEATHER_FORECAST_PENDING_MAX" not in text or "weather_forecast_track_pending" not in text:
+        errors.append(f"{rel}: bound pending forecast response callbacks")
+    if "weather_forecast_cancel_pending_requests" not in text:
+        errors.append(f"{rel}: expose a helper to cancel pending forecast callbacks")
+    return errors
+
+
+def firmware_weather_disconnect_errors(firmware_dir: Path, core_infra_path: Path, root: Path) -> list[str]:
+    config_path = firmware_dir / "button_grid_config.h"
+    if not config_path.exists() or not core_infra_path.exists():
+        return []
+    core_rel = core_infra_path.relative_to(root)
+    config_text = config_path.read_text(encoding="utf-8")
+    core_text = core_infra_path.read_text(encoding="utf-8")
+    errors: list[str] = []
+
+    if "weather_forecast_cancel_pending_requests" in config_text and (
+        "on_client_disconnected:" not in core_text or "weather_forecast_cancel_pending_requests" not in core_text
+    ):
+        errors.append(f"{core_rel}: cancel pending forecast callbacks when the HA API disconnects")
     return errors
 
 
@@ -163,6 +183,7 @@ def run_scan() -> int:
     errors.extend(firmware_todo_request_errors(FIRMWARE_DIR, ROOT))
     errors.extend(firmware_todo_disconnect_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
     errors.extend(firmware_weather_request_errors(FIRMWARE_DIR, ROOT))
+    errors.extend(firmware_weather_disconnect_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
     if errors:
         print("Firmware Home Assistant binding check failed:")
         for error in errors:
@@ -246,6 +267,28 @@ def expect_weather_request_errors(name: str, text: str, expected: tuple[str, ...
         (firmware_dir / "button_grid_config.h").write_text(text, encoding="utf-8")
 
         errors = firmware_weather_request_errors(firmware_dir, root)
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
+def expect_weather_disconnect_errors(
+    name: str,
+    config_text: str,
+    core_text: str,
+    expected: tuple[str, ...],
+) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        firmware_dir = root / "components" / "espcontrol"
+        core_path = root / "common" / "device" / "core_infra.yaml"
+        firmware_dir.mkdir(parents=True)
+        core_path.parent.mkdir(parents=True)
+        (firmware_dir / "button_grid_config.h").write_text(config_text, encoding="utf-8")
+        core_path.write_text(core_text, encoding="utf-8")
+
+        errors = firmware_weather_disconnect_errors(firmware_dir, core_path, root)
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -427,6 +470,9 @@ def run_self_test() -> int:
     expect_weather_request_errors(
         "weather request during reconnect",
         "inline void request_weather_forecast_entity() {\n"
+        "  constexpr int WEATHER_FORECAST_PENDING_MAX = 8;\n"
+        "  weather_forecast_track_pending(req.call_id);\n"
+        "  weather_forecast_cancel_pending_requests();\n"
         "  if (!ha_api_available()) return;\n"
         "  ha_register_action_response_callback(req.call_id, cb);\n"
         "  ha_action_send(req);\n"
@@ -436,11 +482,29 @@ def run_self_test() -> int:
     expect_weather_request_errors(
         "weather callback leak on send failure",
         "inline void request_weather_forecast_entity() {\n"
+        "  constexpr int WEATHER_FORECAST_PENDING_MAX = 8;\n"
+        "  weather_forecast_track_pending(req.call_id);\n"
+        "  weather_forecast_cancel_pending_requests();\n"
         "  if (!ha_api_state_connected()) return;\n"
         "  ha_register_action_response_callback(req.call_id, cb);\n"
         "  if (!ha_action_send(req)) return;\n"
         "}\n",
         ("cancel forecast response callbacks",),
+    )
+    expect_weather_request_errors(
+        "unbounded weather callbacks",
+        "inline void request_weather_forecast_entity() {\n"
+        "  if (!ha_api_state_connected()) return;\n"
+        "  ha_register_action_response_callback(req.call_id, cb);\n"
+        "  ha_cancel_action_response_callback(req.call_id, \"send failed\");\n"
+        "}\n",
+        ("bound pending forecast response callbacks",),
+    )
+    expect_weather_disconnect_errors(
+        "missing weather disconnect cleanup",
+        "inline void weather_forecast_cancel_pending_requests() {}\n",
+        "api:\n  on_client_connected:\n    - lambda: refresh_weather_forecast_cards();\n",
+        ("cancel pending forecast callbacks when the HA API disconnects",),
     )
     print("Firmware Home Assistant binding self-tests passed.")
     return 0

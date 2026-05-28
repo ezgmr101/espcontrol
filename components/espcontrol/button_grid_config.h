@@ -943,6 +943,7 @@ inline void reset_weather_forecast_cards() {
 }
 
 constexpr int WEATHER_FORECAST_TEMP_MISSING = 32767;
+constexpr int WEATHER_FORECAST_PENDING_MAX = 8;
 
 inline std::string weather_forecast_unit_symbol(const std::string &unit) {
   (void)unit;
@@ -1071,6 +1072,44 @@ inline uint32_t next_weather_forecast_call_id() {
   return call_id++;
 }
 
+inline uint32_t *weather_forecast_pending_call_ids() {
+  static uint32_t call_ids[WEATHER_FORECAST_PENDING_MAX] = {};
+  return call_ids;
+}
+
+inline bool weather_forecast_track_pending(uint32_t call_id) {
+  if (call_id == 0) return false;
+  uint32_t *call_ids = weather_forecast_pending_call_ids();
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    if (call_ids[i] == call_id) return true;
+  }
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    if (call_ids[i] == 0) {
+      call_ids[i] = call_id;
+      return true;
+    }
+  }
+  return false;
+}
+
+inline void weather_forecast_clear_pending(uint32_t call_id) {
+  if (call_id == 0) return;
+  uint32_t *call_ids = weather_forecast_pending_call_ids();
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    if (call_ids[i] == call_id) call_ids[i] = 0;
+  }
+}
+
+inline void weather_forecast_cancel_pending_requests() {
+  uint32_t *call_ids = weather_forecast_pending_call_ids();
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    uint32_t call_id = call_ids[i];
+    if (call_id == 0) continue;
+    call_ids[i] = 0;
+    ha_cancel_action_response_callback(call_id, "api disconnected");
+  }
+}
+
 inline void request_weather_forecast_entity(const std::string &entity_id,
                                             const std::string &day) {
   if (!weather_forecast_entity_id_safe(entity_id) || !ha_api_state_connected()) {
@@ -1092,7 +1131,8 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
 
   if (!ha_register_action_response_callback(
     req.call_id,
-    [entity_id, day](const esphome::api::ActionResponse &response) {
+    [entity_id, day, call_id = req.call_id](const esphome::api::ActionResponse &response) {
+      weather_forecast_clear_pending(call_id);
       if (!response.is_success()) {
         ESP_LOGW("weather_forecast", "Forecast request failed for %s: %s",
           entity_id.c_str(), response.get_error_message().c_str());
@@ -1117,7 +1157,13 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
     apply_weather_forecast_to_entity(entity_id, day, false, 0, 0, "");
     return;
   }
+  if (!weather_forecast_track_pending(req.call_id)) {
+    ha_cancel_action_response_callback(req.call_id, "too many pending forecasts");
+    apply_weather_forecast_to_entity(entity_id, day, false, 0, 0, "");
+    return;
+  }
   if (!ha_action_send(req)) {
+    weather_forecast_clear_pending(req.call_id);
     ha_cancel_action_response_callback(req.call_id, "send failed");
   }
 }
