@@ -267,6 +267,7 @@ struct TimezoneCardRef {
   std::string timezone;
   std::string label;
   bool show_label;
+  bool show_meridiem;
 };
 
 inline TimezoneCardRef *timezone_card_refs() {
@@ -333,7 +334,7 @@ inline void apply_timezone_card_text(const TimezoneCardRef &ref,
         int hour12 = hour % 12;
         if (hour12 == 0) hour12 = 12;
         snprintf(value_buf, sizeof(value_buf), "%d:%02d", hour12, minute);
-        unit_text = hour < 12 ? "am" : "pm";
+        if (ref.show_meridiem) unit_text = hour < 12 ? "am" : "pm";
       } else {
         snprintf(value_buf, sizeof(value_buf), "%02d:%02d", hour, minute);
       }
@@ -350,13 +351,15 @@ inline void register_timezone_card(lv_obj_t *value_lbl, lv_obj_t *unit_lbl,
                                    lv_obj_t *label_lbl,
                                    const std::string &timezone,
                                    const std::string &label,
-                                   bool show_label = true) {
+                                   bool show_label = true,
+                                   bool show_meridiem = true) {
   int &count = timezone_card_count();
   if (count >= MAX_GRID_SLOTS + MAX_SUBPAGE_ITEMS) {
     ESP_LOGW("timezone", "Too many timezone cards; skipping time updates");
     return;
   }
-  timezone_card_refs()[count++] = {value_lbl, unit_lbl, label_lbl, timezone, label, show_label};
+  timezone_card_refs()[count++] = {value_lbl, unit_lbl, label_lbl, timezone, label,
+                                   show_label, show_meridiem};
   apply_timezone_card_text(timezone_card_refs()[count - 1], false, 0, timezone, false);
 }
 
@@ -418,7 +421,7 @@ inline void setup_clock_card(BtnSlot &s, const ParsedCfg &p,
   lv_label_set_text(s.sensor_lbl, "--:--");
   lv_label_set_text(s.unit_lbl, "");
   lv_label_set_text(s.text_lbl, "");
-  register_timezone_card(s.sensor_lbl, s.unit_lbl, s.text_lbl, p.entity, "", false);
+  register_timezone_card(s.sensor_lbl, s.unit_lbl, s.text_lbl, p.entity, "", false, false);
 }
 
 inline void setup_weather_card(BtnSlot &s, bool has_sensor_color, uint32_t sensor_val) {
