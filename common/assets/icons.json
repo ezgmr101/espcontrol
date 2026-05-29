@@ -264,6 +264,11 @@
       "mdi": "cast"
     },
     {
+      "name": "Cat",
+      "codepoint": "F011B",
+      "mdi": "cat"
+    },
+    {
       "name": "CCTV",
       "codepoint": "F07AE",
       "mdi": "cctv"

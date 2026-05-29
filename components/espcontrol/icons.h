@@ -61,6 +61,7 @@ static const IconEntry ICON_ENTRIES[] = {
     {"Camera",                     "\U000F0100"},
     {"Car Electric",               "\U000F0B6C"},
     {"Cast",                       "\U000F0118"},
+    {"Cat",                        "\U000F011B"},
     {"CCTV",                       "\U000F07AE"},
     {"Ceiling Fan",                "\U000F1797"},
     {"Ceiling Light",              "\U000F0769"},

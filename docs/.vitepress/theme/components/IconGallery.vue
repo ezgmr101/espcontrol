@@ -320,6 +320,7 @@ const ICON_GROUPS = {
 
   'Account': 'General',
   'Broom': 'General',
+  'Cat': 'General',
   'Check': 'General',
   'Clock': 'General',
   'Delete': 'General',
