@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <utility>
 
 // Internal implementation detail for button_grid.h. Include button_grid.h from device YAML.

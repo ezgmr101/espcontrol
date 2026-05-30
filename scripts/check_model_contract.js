@@ -135,6 +135,7 @@ assert.deepStrictEqual(
     scheduleWakeBrightness: 70,
     scheduleDimmedBrightness: 12,
     scheduleClockBrightness: 40,
+    scheduleClockTextColor: "ABCDEF",
   })),
   {
     brightnessDayVal: 88,
@@ -148,6 +149,7 @@ assert.deepStrictEqual(
     scheduleWakeBrightness: 70,
     scheduleDimmedBrightness: 12,
     scheduleClockBrightness: 40,
+    scheduleClockTextColor: "ABCDEF",
   },
   "backup screen settings normalize with current-value fallbacks"
 );

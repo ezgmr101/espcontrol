@@ -18,8 +18,11 @@ api:
   homeassistant_services: true
   on_client_connected:
     - lambda: |-
-        ESP_LOGI("api", "Home Assistant API client connected");
-        if (ha_api_state_connected()) refresh_weather_forecast_cards();
+        ESP_LOGI("api", "API client connected: %s", client_info.c_str());
+        bool is_home_assistant = client_info.find("Home Assistant") != std::string::npos;
+        if (is_home_assistant && ha_api_state_connected()) {
+          refresh_weather_forecast_cards();
+        }
     - delay: 2s
     - lambda: |-
         todo_reload_active_modal();
@@ -33,7 +36,11 @@ api:
         todo_reload_active_modal();
   on_client_disconnected:
     - lambda: |-
-        ESP_LOGW("api", "Home Assistant API client disconnected");
+        ESP_LOGW("api", "API client disconnected: %s", client_info.c_str());
+        bool is_home_assistant = client_info.find("Home Assistant") != std::string::npos;
+        if (!is_home_assistant && ha_api_state_connected()) {
+          return;
+        }
         weather_forecast_cancel_pending_requests();
         cover_stop_cancel_pending_request();
         todo_cancel_pending_request("api disconnected");

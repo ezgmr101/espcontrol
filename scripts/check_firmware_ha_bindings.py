@@ -265,8 +265,9 @@ def firmware_weather_reconnect_errors(core_infra_path: Path, root: Path) -> list
         return errors
 
     body = connected_match.group("body")
-    for line in body.splitlines():
-        if "refresh_weather_forecast_cards();" in line and "ha_api_state_connected()" not in line:
+    for match in re.finditer(r"refresh_weather_forecast_cards\(\);", body):
+        guard_window = body[max(0, match.start() - 160) : match.end()]
+        if "ha_api_state_connected()" not in guard_window:
             errors.append(f"{core_rel}: wait for Home Assistant state readiness before forecast reconnect refreshes")
             break
     if "refresh_weather_forecast_cards();" in body and "delay: 20s" not in body:
