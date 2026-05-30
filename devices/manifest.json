@@ -625,12 +625,15 @@
           "volumeNumber": "font_roboto_thin_96_text",
           "volumeLabel": "font_roboto_regular_22_text",
           "climateCardIcon": "font_mdi_33_icons",
-          "subpageChevron": "font_mdi_19_network",
+          "subpageChevron": "font_mdi_23_subpage",
           "climateOptionTitle": "font_roboto_regular_20_text",
           "climateOptionValue": "font_roboto_regular_18_text"
         },
         "display": {
-          "wrapTallLabels": false
+          "wrapTallLabels": false,
+          "subpageChevronX": 3,
+          "subpageChevronY": -2,
+          "subpageChevronTextWidthPercent": 96
         },
         "package": {
           "subpageConfigChunks": 4,
@@ -647,7 +650,7 @@
             "setup_action_button_height": "\"56\"",
             "setup_action_button_radius": "\"12\"",
             "icon_font": "font_mdi_44_icons",
-            "subpage_chevron_font": "font_mdi_19_network",
+            "subpage_chevron_font": "font_mdi_23_subpage",
             "label_font": "font_roboto_regular_22_text",
             "media_title_font": "font_roboto_light_34_text",
             "unit_font": "font_roboto_regular_22_text",
