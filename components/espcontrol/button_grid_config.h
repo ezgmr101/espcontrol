@@ -1080,6 +1080,7 @@ inline void reset_weather_forecast_cards() {
 constexpr int WEATHER_FORECAST_TEMP_MISSING = 32767;
 constexpr int WEATHER_FORECAST_PENDING_MAX = 8;
 constexpr uint32_t WEATHER_FORECAST_REQUEST_TIMEOUT_MS = 60000;
+constexpr uint32_t WEATHER_FORECAST_RETRY_DELAY_MS = 300000;
 
 struct WeatherForecastPendingRequest {
   uint32_t call_id = 0;
@@ -1091,6 +1092,12 @@ struct WeatherForecastPendingRequest {
 struct WeatherForecastQueuedRequest {
   std::string entity_id;
   std::string day;
+};
+
+struct WeatherForecastRetryRequest {
+  std::string entity_id;
+  std::string day;
+  uint32_t due_ms = 0;
 };
 
 inline std::string weather_forecast_unit_symbol(const std::string &unit) {
@@ -1270,6 +1277,11 @@ inline WeatherForecastQueuedRequest *weather_forecast_queued_requests() {
   return requests;
 }
 
+inline WeatherForecastRetryRequest *weather_forecast_retry_requests() {
+  static WeatherForecastRetryRequest requests[WEATHER_FORECAST_PENDING_MAX];
+  return requests;
+}
+
 inline bool weather_forecast_pending_key(const std::string &entity_id,
                                          const std::string &day) {
   WeatherForecastPendingRequest *requests = weather_forecast_pending_requests();
@@ -1285,6 +1297,18 @@ inline bool weather_forecast_pending_key(const std::string &entity_id,
 inline bool weather_forecast_queue_key(const std::string &entity_id,
                                        const std::string &day) {
   WeatherForecastQueuedRequest *requests = weather_forecast_queued_requests();
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    if (!requests[i].entity_id.empty() &&
+        weather_forecast_request_matches(entity_id, day, requests[i].entity_id, requests[i].day)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline bool weather_forecast_retry_key(const std::string &entity_id,
+                                       const std::string &day) {
+  WeatherForecastRetryRequest *requests = weather_forecast_retry_requests();
   for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
     if (!requests[i].entity_id.empty() &&
         weather_forecast_request_matches(entity_id, day, requests[i].entity_id, requests[i].day)) {
@@ -1337,9 +1361,54 @@ inline void weather_forecast_clear_queue() {
   }
 }
 
+inline void weather_forecast_clear_retry(const std::string &entity_id,
+                                         const std::string &day) {
+  WeatherForecastRetryRequest *requests = weather_forecast_retry_requests();
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    if (!requests[i].entity_id.empty() &&
+        weather_forecast_request_matches(entity_id, day, requests[i].entity_id, requests[i].day)) {
+      requests[i] = WeatherForecastRetryRequest();
+    }
+  }
+}
+
+inline void weather_forecast_clear_retries() {
+  WeatherForecastRetryRequest *requests = weather_forecast_retry_requests();
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    requests[i] = WeatherForecastRetryRequest();
+  }
+}
+
+inline bool weather_forecast_schedule_retry(const std::string &entity_id,
+                                            const std::string &day,
+                                            const char *reason) {
+  if (!weather_forecast_entity_id_safe(entity_id)) return false;
+  if (weather_forecast_pending_key(entity_id, day) ||
+      weather_forecast_queue_key(entity_id, day) ||
+      weather_forecast_retry_key(entity_id, day)) {
+    return true;
+  }
+  WeatherForecastRetryRequest *requests = weather_forecast_retry_requests();
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    if (requests[i].entity_id.empty()) {
+      requests[i].entity_id = entity_id;
+      requests[i].day = day;
+      requests[i].due_ms = esphome::millis() + WEATHER_FORECAST_RETRY_DELAY_MS;
+      ESP_LOGW("weather_forecast", "Retrying forecast request for %s in %u seconds: %s",
+        entity_id.c_str(), (unsigned) (WEATHER_FORECAST_RETRY_DELAY_MS / 1000),
+        reason ? reason : "failed");
+      return true;
+    }
+  }
+  ESP_LOGW("weather_forecast", "Too many delayed forecast retries; skipping %s",
+    entity_id.c_str());
+  return false;
+}
+
 inline bool weather_forecast_enqueue(const std::string &entity_id,
                                      const std::string &day) {
   if (!weather_forecast_entity_id_safe(entity_id)) return false;
+  weather_forecast_clear_retry(entity_id, day);
   if (weather_forecast_pending_key(entity_id, day) ||
       weather_forecast_queue_key(entity_id, day)) {
     return true;
@@ -1370,10 +1439,27 @@ inline bool weather_forecast_dequeue(std::string &entity_id,
   return false;
 }
 
+inline bool weather_forecast_enqueue_due_retries() {
+  if (!ha_api_state_connected()) return false;
+  WeatherForecastRetryRequest *requests = weather_forecast_retry_requests();
+  uint32_t now = esphome::millis();
+  bool queued = false;
+  for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
+    if (requests[i].entity_id.empty()) continue;
+    if ((int32_t) (now - requests[i].due_ms) < 0) continue;
+    std::string entity_id = requests[i].entity_id;
+    std::string day = requests[i].day;
+    requests[i] = WeatherForecastRetryRequest();
+    queued = weather_forecast_enqueue(entity_id, day) || queued;
+  }
+  return queued;
+}
+
 inline void weather_forecast_send_next_queued();
 
 inline void weather_forecast_cancel_pending_requests() {
   weather_forecast_clear_queue();
+  weather_forecast_clear_retries();
   WeatherForecastPendingRequest *requests = weather_forecast_pending_requests();
   for (int i = 0; i < WEATHER_FORECAST_PENDING_MAX; i++) {
     uint32_t call_id = requests[i].call_id;
@@ -1411,6 +1497,7 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
   uint32_t call_id = next_weather_forecast_call_id();
   if (!ha_action_begin(req, "weather.get_forecasts", false, 2, call_id)) {
     apply_weather_forecast_unavailable_for_entity(entity_id);
+    weather_forecast_schedule_retry(entity_id, day, "request setup failed");
     return;
   }
   req.wants_response = true;
@@ -1421,12 +1508,13 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
 
   if (!ha_register_action_response_callback(
     req.call_id,
-    [entity_id, call_id = req.call_id](const esphome::api::ActionResponse &response) {
+    [entity_id, day, call_id = req.call_id](const esphome::api::ActionResponse &response) {
       weather_forecast_clear_pending(call_id);
       if (!response.is_success()) {
         ESP_LOGW("weather_forecast", "Forecast request failed for %s: %s",
           entity_id.c_str(), response.get_error_message().c_str());
         apply_weather_forecast_unavailable_for_entity(entity_id);
+        weather_forecast_schedule_retry(entity_id, day, response.get_error_message().c_str());
         weather_forecast_send_next_queued();
         return;
       }
@@ -1434,6 +1522,7 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
       const char *payload = json["response"].as<const char *>();
       if (payload == nullptr) {
         apply_weather_forecast_unavailable_for_entity(entity_id);
+        weather_forecast_schedule_retry(entity_id, day, "empty response");
         weather_forecast_send_next_queued();
         return;
       }
@@ -1449,6 +1538,7 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
       weather_forecast_send_next_queued();
     })) {
     apply_weather_forecast_unavailable_for_entity(entity_id);
+    weather_forecast_schedule_retry(entity_id, day, "callback setup failed");
     return;
   }
   if (!weather_forecast_track_pending(req.call_id, entity_id, day)) {
@@ -1465,6 +1555,7 @@ inline void request_weather_forecast_entity(const std::string &entity_id,
 
 inline void weather_forecast_send_next_queued() {
   if (!ha_api_state_connected() || weather_forecast_any_pending()) return;
+  weather_forecast_enqueue_due_retries();
   std::string entity_id;
   std::string day;
   if (!weather_forecast_dequeue(entity_id, day)) return;
