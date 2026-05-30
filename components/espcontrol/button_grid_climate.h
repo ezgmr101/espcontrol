@@ -500,8 +500,12 @@ inline void climate_apply_jc4880p443_bottom_chip_padding(lv_obj_t *chip, bool op
 
 inline void climate_apply_wide_landscape_bottom_chip_padding(lv_obj_t *chip) {
   if (!chip) return;
-  lv_obj_set_style_pad_top(chip, 8, LV_PART_MAIN);
-  lv_obj_set_style_pad_bottom(chip, 8, LV_PART_MAIN);
+  lv_obj_set_style_pad_top(chip, 16, LV_PART_MAIN);
+  lv_obj_set_style_pad_bottom(chip, 0, LV_PART_MAIN);
+  lv_obj_t *icon_lbl = lv_obj_get_child(chip, 0);
+  lv_obj_t *text_col = lv_obj_get_child(chip, 1);
+  if (icon_lbl) lv_obj_set_style_translate_y(icon_lbl, 3, LV_PART_MAIN);
+  if (text_col) lv_obj_set_style_translate_y(text_col, 3, LV_PART_MAIN);
 }
 
 inline ControlModalLayout climate_control_calc_layout(ClimateControlCtx *ctx) {
