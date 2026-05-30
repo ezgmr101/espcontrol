@@ -41,8 +41,16 @@ esphome:
             wifi::global_wifi_component->set_ap(ap);
     - priority: -100
       then:
+        - lvgl.resume:
         - script.execute: trmnl_sync_dashboard_config
-        - component.update: epaper
+        - if:
+            condition:
+              lambda: 'return !wifi::global_wifi_component->has_sta();'
+            then:
+              - lvgl.page.show: trmnl_wifi_setup_page
+            else:
+              - lvgl.page.show: main_page
+              - script.execute: trmnl_refresh_display
 
 logger:
 
@@ -52,7 +60,8 @@ wifi:
   ap:
     ap_timeout: 90s
   on_connect:
-    - component.update: epaper
+    - lvgl.page.show: main_page
+    - script.execute: trmnl_refresh_display
   on_disconnect:
     - delay: 90s
     - if:
@@ -60,6 +69,7 @@ wifi:
           not:
             wifi.connected:
         then:
+          - lvgl.page.show: trmnl_wifi_setup_page
           - component.update: epaper
 
 api:
@@ -68,7 +78,7 @@ api:
   on_client_connected:
     - delay: 2s
     - script.execute: trmnl_sync_dashboard_config
-    - component.update: epaper
+    - script.execute: trmnl_refresh_display
 
 ota:
   - platform: esphome
@@ -130,7 +140,7 @@ binary_sensor:
         - lambda: |-
             id(trmnl_current_page) = espcontrol::epaper_dashboard_wrap_page(id(trmnl_current_page) - 1);
             espcontrol::epaper_dashboard_mark_dirty();
-        - component.update: epaper
+        - script.execute: trmnl_refresh_display
 
   - platform: gpio
     id: trmnl_key_home
@@ -150,7 +160,7 @@ binary_sensor:
         - lambda: |-
             id(trmnl_current_page) = 0;
             espcontrol::epaper_dashboard_mark_dirty();
-        - component.update: epaper
+        - script.execute: trmnl_refresh_display
 
   - platform: gpio
     id: trmnl_key_next
@@ -170,7 +180,7 @@ binary_sensor:
         - lambda: |-
             id(trmnl_current_page) = espcontrol::epaper_dashboard_wrap_page(id(trmnl_current_page) + 1);
             espcontrol::epaper_dashboard_mark_dirty();
-        - component.update: epaper
+        - script.execute: trmnl_refresh_display
 
 display:
   - platform: waveshare_epaper
@@ -183,21 +193,10 @@ display:
       number: GPIO4
       inverted: true
     update_interval: never
+    auto_clear_enabled: false
     rotation: 0
-    lambda: |-
-      if (!wifi::global_wifi_component->has_sta()) {
-        espcontrol::epaper_dashboard_render_wifi_setup(
-          it,
-          id(font_trmnl_header_20),
-          id(font_trmnl_label_14),
-          id(font_trmnl_value_24),
-          wifi::global_wifi_component->get_ap().get_ssid().c_str());
-      } else {
-        espcontrol::epaper_dashboard_render(
-          it,
-          id(font_trmnl_header_20),
-          id(font_trmnl_label_14),
-          id(font_trmnl_value_24),
-          id(trmnl_current_page));
-      }
-      espcontrol::epaper_dashboard_clear_dirty();
+
+lvgl:
+  id: main_lvgl
+  displays: epaper
+  buffer_size: 12%

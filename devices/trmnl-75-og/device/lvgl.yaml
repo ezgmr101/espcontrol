@@ -1,0 +1,124 @@
+# =============================================================================
+# LVGL MAIN PAGE - TRMNL 7.5 OG monochrome e-paper dashboard
+# =============================================================================
+
+lvgl:
+  top_layer:
+    widgets:
+      - obj:
+          id: trmnl_clock_bar
+          align: top_mid
+          width: 100%
+          height: 42
+          bg_color: 0x000000
+          bg_opa: cover
+          border_width: 0
+          pad_all: 0
+          scrollable: false
+          clickable: false
+          widgets:
+            - label:
+                id: trmnl_title_label
+                text: "ESPControl"
+                text_font: font_trmnl_header_20
+                text_color: 0xFFFFFF
+                align: left_mid
+                x: 12
+            - label:
+                id: trmnl_page_label
+                text: "Page 1/4"
+                text_font: font_trmnl_header_20
+                text_color: 0xFFFFFF
+                align: right_mid
+                x: -12
+
+  pages:
+    - id: trmnl_wifi_setup_page
+      scrollbar_mode: "off"
+      width: 100%
+      bg_color: 0xFFFFFF
+      bg_opa: cover
+      pad_all: 0
+      widgets:
+        - obj:
+            align: center
+            width: 90%
+            height: 72%
+            bg_color: 0xFFFFFF
+            bg_opa: cover
+            border_color: 0x000000
+            border_width: 2
+            radius: 6
+            pad_all: 24
+            scrollable: false
+            clickable: false
+            layout:
+              type: flex
+              flex_flow: COLUMN
+              flex_align_main: center
+              flex_align_cross: center
+              pad_row: 18
+            widgets:
+              - label:
+                  text: "WiFi Setup"
+                  text_font: font_trmnl_value_24
+                  text_color: 0x000000
+                  text_align: center
+              - label:
+                  text: "Connect to the setup hotspot"
+                  text_font: font_trmnl_header_20
+                  text_color: 0x000000
+                  text_align: center
+              - label:
+                  text: "ESP setup hotspot"
+                  id: trmnl_wifi_setup_ssid
+                  text_font: font_trmnl_label_14
+                  text_color: 0x000000
+                  text_align: center
+              - label:
+                  text: "Then open 192.168.4.1"
+                  text_font: font_trmnl_value_24
+                  text_color: 0x000000
+                  text_align: center
+              - label:
+                  text: "After WiFi setup, add this device in Home Assistant."
+                  text_font: font_trmnl_label_14
+                  text_color: 0x000000
+                  text_align: center
+
+    - id: main_page
+      scrollbar_mode: "off"
+      layout:
+        type: grid
+        grid_columns: [FR(1), FR(1), FR(1), FR(1), FR(1)]
+        grid_rows: [FR(1), FR(1), FR(1), FR(1)]
+        pad_row: 6
+        pad_column: 6
+      width: 100%
+      bg_color: 0xFFFFFF
+      bg_opa: cover
+      pad_top: 52
+      pad_bottom: 10
+      pad_left: 10
+      pad_right: 10
+      widgets:
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "1" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "2" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "3" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "4" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "5" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "6" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "7" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "8" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "9" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "10" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "11" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "12" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "13" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "14" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "15" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "16" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "17" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "18" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "19" } }
+        - !include { file: trmnl_tile_widget.yaml, vars: { num: "20" } }

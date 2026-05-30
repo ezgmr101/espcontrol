@@ -1,0 +1,28 @@
+obj:
+  id: trmnl_tile_${num}
+  bg_color: 0xFFFFFF
+  bg_opa: cover
+  border_color: 0x000000
+  border_width: 1
+  radius: 6
+  shadow_width: 0
+  pad_all: 8
+  scrollable: false
+  clickable: false
+  widgets:
+    - label:
+        id: trmnl_tile_${num}_label
+        text: "Configure"
+        text_font: font_trmnl_label_14
+        text_color: 0x000000
+        align: top_left
+        width: 100%
+        long_mode: wrap
+    - label:
+        id: trmnl_tile_${num}_value
+        text: ""
+        text_font: font_trmnl_value_24
+        text_color: 0x000000
+        align: bottom_left
+        width: 100%
+        long_mode: dot

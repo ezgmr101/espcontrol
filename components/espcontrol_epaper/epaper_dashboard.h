@@ -4,6 +4,7 @@
 #include "esphome/core/log.h"
 #include "esphome/components/api/api_server.h"
 #include "esphome/components/font/font.h"
+#include "lvgl.h"
 
 #include <array>
 #include <cctype>
@@ -142,6 +143,90 @@ inline bool epaper_dashboard_state_unavailable(const std::string &value) {
 
 inline bool epaper_dashboard_api_available() {
   return esphome::api::global_api_server != nullptr;
+}
+
+inline std::string epaper_dashboard_display_value(const EpaperDashboardTile &tile);
+
+struct EpaperDashboardLvglSlot {
+  lv_obj_t *tile = nullptr;
+  lv_obj_t *label = nullptr;
+  lv_obj_t *value = nullptr;
+};
+
+inline std::array<EpaperDashboardLvglSlot, EPAPER_DASHBOARD_PAGE_SLOTS> &epaper_dashboard_lvgl_slots() {
+  static std::array<EpaperDashboardLvglSlot, EPAPER_DASHBOARD_PAGE_SLOTS> slots;
+  return slots;
+}
+
+inline lv_obj_t *&epaper_dashboard_lvgl_page_label() {
+  static lv_obj_t *label = nullptr;
+  return label;
+}
+
+inline void epaper_dashboard_bind_lvgl_page_label(lv_obj_t *label) {
+  epaper_dashboard_lvgl_page_label() = label;
+}
+
+inline void epaper_dashboard_bind_lvgl_slot(int slot, lv_obj_t *tile, lv_obj_t *label, lv_obj_t *value) {
+  if (slot < 0 || slot >= EPAPER_DASHBOARD_PAGE_SLOTS) return;
+  epaper_dashboard_lvgl_slots()[slot] = {tile, label, value};
+  if (tile) {
+    lv_obj_clear_flag(tile, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_clear_flag(tile, LV_OBJ_FLAG_SCROLLABLE);
+  }
+}
+
+inline void epaper_dashboard_style_lvgl_tile(lv_obj_t *tile, lv_obj_t *label, lv_obj_t *value,
+                                            bool configured, bool active) {
+  if (!tile) return;
+  uint32_t bg = active ? 0x000000 : 0xFFFFFF;
+  uint32_t fg = active ? 0xFFFFFF : 0x000000;
+  lv_obj_set_style_bg_color(tile, lv_color_hex(bg), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(tile, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_border_color(tile, lv_color_hex(0x000000), LV_PART_MAIN);
+  lv_obj_set_style_border_width(tile, configured ? 2 : 1, LV_PART_MAIN);
+  lv_obj_set_style_radius(tile, 6, LV_PART_MAIN);
+  lv_obj_set_style_shadow_width(tile, 0, LV_PART_MAIN);
+  lv_obj_set_style_pad_all(tile, 8, LV_PART_MAIN);
+  if (label) lv_obj_set_style_text_color(label, lv_color_hex(fg), LV_PART_MAIN);
+  if (value) lv_obj_set_style_text_color(value, lv_color_hex(fg), LV_PART_MAIN);
+}
+
+inline void epaper_dashboard_update_lvgl_page(int page) {
+  page = epaper_dashboard_wrap_page(page);
+  auto &tiles = epaper_dashboard_tiles();
+  auto &slots = epaper_dashboard_lvgl_slots();
+  int start = page * EPAPER_DASHBOARD_PAGE_SLOTS;
+
+  if (auto *page_label = epaper_dashboard_lvgl_page_label()) {
+    char page_text[20];
+    std::snprintf(page_text, sizeof(page_text), "Page %d/%d", page + 1, EPAPER_DASHBOARD_PAGES);
+    lv_label_set_text(page_label, page_text);
+  }
+
+  for (int i = 0; i < EPAPER_DASHBOARD_PAGE_SLOTS; i++) {
+    const auto &tile = tiles[start + i];
+    auto &slot = slots[i];
+    if (!slot.tile) continue;
+    int col = i % 5;
+    int row = i / 5;
+    bool configured = !tile.config.empty();
+    bool active = configured && epaper_dashboard_state_active(tile.value);
+    epaper_dashboard_style_lvgl_tile(slot.tile, slot.label, slot.value, configured, active);
+    lv_obj_set_grid_cell(slot.tile, LV_GRID_ALIGN_STRETCH, col, 1, LV_GRID_ALIGN_STRETCH, row, 1);
+    if (slot.label) {
+      lv_label_set_text(slot.label, configured ? tile.label.c_str() : "Configure");
+      lv_obj_clear_flag(slot.label, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (slot.value) {
+      std::string value = epaper_dashboard_display_value(tile);
+      lv_label_set_text(slot.value, configured ? value.c_str() : "");
+      if (configured) lv_obj_clear_flag(slot.value, LV_OBJ_FLAG_HIDDEN);
+      else lv_obj_add_flag(slot.value, LV_OBJ_FLAG_HIDDEN);
+    }
+    lv_obj_invalidate(slot.tile);
+  }
+  epaper_dashboard_clear_dirty();
 }
 
 inline void epaper_dashboard_subscribe(int index) {

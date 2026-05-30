@@ -94,4 +94,5 @@ packages:
   btn_78:          !include { file: ../../common/config/button_config_template.yaml, vars: { num: "78" } }
   btn_79:          !include { file: ../../common/config/button_config_template.yaml, vars: { num: "79" } }
   btn_80:          !include { file: ../../common/config/button_config_template.yaml, vars: { num: "80" } }
+  lvgl:            !include device/lvgl.yaml
   sensors:         !include device/sensors.yaml
