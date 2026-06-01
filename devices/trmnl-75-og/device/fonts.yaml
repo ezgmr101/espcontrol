@@ -11,7 +11,7 @@ font:
   - file: "gfonts://Inter@600"
     id: font_trmnl_label_14
     size: 16
-    glyphs: " !\"%()+,-./0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"
+    glyphs: " !\"%()+,-./0123456789:°ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_"
 
   - file: "gfonts://Inter@700"
     id: font_trmnl_value_24

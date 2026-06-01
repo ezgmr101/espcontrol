@@ -134,6 +134,10 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                 assert "id: font_trmnl_value_large_72" in fonts_path.read_text(encoding="utf-8"), (
                     f"{slug}: large-number font must be defined for TRMNL weather cards"
                 )
+                trmnl_fonts = fonts_path.read_text(encoding="utf-8")
+                assert "id: font_trmnl_label_14\n    size: 16\n    glyphs: \" !\\\"%()+,-./0123456789:°" in trmnl_fonts, (
+                    f"{slug}: weather forecast unit font must include the degree symbol"
+                )
                 assert "id: button_${num}_unit_label\n              text: \"\"\n              text_font: font_trmnl_label_14" in (
                     tile_path.read_text(encoding="utf-8")
                 ), (
