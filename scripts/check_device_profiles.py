@@ -81,8 +81,10 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
     for slug, profile in profiles.items():
         package_path = ROOT / "devices" / slug / "packages.yaml"
         device_path = ROOT / "devices" / slug / "device" / "device.yaml"
+        fonts_path = ROOT / "devices" / slug / "device" / "fonts.yaml"
         lvgl_path = ROOT / "devices" / slug / "device" / "lvgl.yaml"
         sensor_path = ROOT / "devices" / slug / "device" / "sensors.yaml"
+        tile_path = ROOT / "devices" / slug / "device" / "trmnl_tile_widget.yaml"
         package = package_path.read_text(encoding="utf-8")
         device = device_path.read_text(encoding="utf-8")
         sensors = sensor_path.read_text(encoding="utf-8")
@@ -125,6 +127,17 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                 )
                 assert "cfg.timezone = id(timezone_select).current_option();" in sensors, (
                     f"{slug}: automatic temperature units must use the configured timezone"
+                )
+                assert "id(font_trmnl_value_large_72)->get_lv_font()" in sensors, (
+                    f"{slug}: weather large-number cards must use a visibly larger TRMNL font"
+                )
+                assert "id: font_trmnl_value_large_72" in fonts_path.read_text(encoding="utf-8"), (
+                    f"{slug}: large-number font must be defined for TRMNL weather cards"
+                )
+                assert "id: button_${num}_unit_label\n              text: \"\"\n              text_font: font_trmnl_label_14" in (
+                    tile_path.read_text(encoding="utf-8")
+                ), (
+                    f"{slug}: weather forecast unit label must be visible like the web preview"
                 )
                 assert "set_display_temperature_unit(id(temperature_unit_select).current_option(),\n                                         id(timezone_select).current_option())" in device, (
                     f"{slug}: temperature unit and timezone changes must update the shared display unit helper"

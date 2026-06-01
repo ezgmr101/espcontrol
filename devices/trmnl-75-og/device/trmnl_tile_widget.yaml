@@ -45,7 +45,6 @@ button:
               text_font: font_trmnl_label_14
               text_color: 0x000000
               pad_bottom: 6
-              hidden: true
     - label:
         id: button_${num}_text_label
         text: "Configure"
