@@ -155,17 +155,21 @@ def test_trmnl_epaper_icon_literals() -> None:
     assert not missing_glyphs, f"TRMNL hard-coded icon glyphs missing from icon font: {', '.join(missing_glyphs)}"
 
 
-def test_weather_card_device_badges() -> None:
+def test_weather_card_visual_matches_preview() -> None:
     cards = BUTTON_GRID_CARDS.read_text(encoding="utf-8")
-    assert "set_weather_card_badge" in cards, "device weather cards should render the web preview badge"
-    assert 'set_weather_card_badge(s, "Weather Cloudy")' in cards, (
-        "current weather device card should render the same weather badge as the web preview"
+    styles = (ROOT / "src" / "webserver" / "modules" / "styles.js").read_text(encoding="utf-8")
+    assert ".sp-type-badge{display:none}" in styles, "web preview type badges should remain visually hidden"
+    assert "set_weather_card_badge" not in cards, (
+        "device weather cards should not show the hidden web preview type badge"
+    )
+    assert 'set_weather_card_badge(s, "Weather Cloudy")' not in cards, (
+        "current weather device card should not render a visible weather badge"
     )
     assert 'lv_label_set_text(s.text_lbl, "Cloudy")' in cards, (
         "current weather device card should render the same label as the web preview"
     )
-    assert 'set_weather_card_badge(s, "Weather Partly Cloudy")' in cards, (
-        "forecast weather device card should render the same forecast badge as the web preview"
+    assert 'set_weather_card_badge(s, "Weather Partly Cloudy")' not in cards, (
+        "forecast weather device card should not render a visible forecast badge"
     )
 
 
@@ -250,7 +254,7 @@ def main() -> int:
     test_generated_yaml(profiles)
     test_setup_icon_glyphs()
     test_trmnl_epaper_icon_literals()
-    test_weather_card_device_badges()
+    test_weather_card_visual_matches_preview()
     test_weather_card_mode_visibility_reset()
     test_temperature_unit_changes_refresh_weather_cards()
     test_current_weather_state_updates_availability()
