@@ -363,7 +363,7 @@ def test_weather_card_visual_matches_preview() -> None:
     assert 'if (normalized == "night") return "clear-night";' in config, (
         "current weather device cards should map the web Weather Night icon name to clear night"
     )
-    assert 'if (normalized == "night-cloudy") return "night-partly-cloudy";' in config, (
+    assert 'normalized == "night-cloudy"' in config and 'return "night-partly-cloudy";' in config, (
         "current weather device cards should accept night cloudy aliases for the web weather icon"
     )
     assert 'if (normalized == "sunny-off") return "unavailable";' in config, (
@@ -390,7 +390,9 @@ def test_weather_card_visual_matches_preview() -> None:
         ("mostly-sunny", "sunny"),
         ("overcast", "cloudy"),
         ("partly-cloudy-day", "partlycloudy"),
-        ("partly-cloudy-night", "partlycloudy"),
+        ("cloudy-night", "night-partly-cloudy"),
+        ("mostly-cloudy-night", "night-partly-cloudy"),
+        ("partly-cloudy-night", "night-partly-cloudy"),
         ("partly-sunny", "partlycloudy"),
         ("possibly-rainy-day", "rainy"),
         ("possibly-rainy-night", "rainy"),
