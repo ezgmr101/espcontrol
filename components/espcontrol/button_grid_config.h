@@ -1394,6 +1394,9 @@ inline void register_weather_forecast_card(lv_obj_t *btn,
   weather_forecast_card_refs()[count++] = {
     btn, value_lbl, unit_lbl, label_lbl, entity_id, day, label, "", false, 0, 0, ""
   };
+  apply_control_availability(weather_forecast_card_refs()[count - 1].btn,
+                             weather_forecast_card_refs()[count - 1].btn,
+                             false, false);
   apply_weather_forecast_card_text(weather_forecast_card_refs()[count - 1], false, 0, 0, "");
 }
 

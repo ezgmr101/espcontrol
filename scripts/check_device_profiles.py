@@ -280,6 +280,7 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                     and "register_weather_forecast_card(s.btn, s.sensor_lbl, s.unit_lbl, s.text_lbl," in card_helpers
                     and "apply_control_availability(refs[i].btn, refs[i].btn, false, false);" in config
                     and "apply_control_availability(refs[i].btn, refs[i].btn, valid, false);" in config
+                    and "weather_forecast_card_refs()[count - 1].btn" in config
                 ), f"{slug}: forecast weather cards must dim and restore availability like current weather cards"
         else:
             assert f"cfg.num_slots = {profile['slots']};" in sensors, f"{slug}: sensors.yaml missing slot count"
