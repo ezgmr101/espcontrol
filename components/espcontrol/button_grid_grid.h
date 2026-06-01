@@ -647,6 +647,7 @@ inline void grid_phase1(
 
   reset_calendar_cards();
   reset_timezone_cards();
+  weather_forecast_cancel_pending_requests();
   reset_weather_forecast_cards();
   reset_climate_control_refs();
 

@@ -164,6 +164,12 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                     and "setup_card_visual(s, p, cfg, palette, row_span, col_span);" in phase1_match.group(0)
                     and "refresh_card_layout(s, p, cfg, row_span);" in phase1_match.group(0)
                 ), f"{slug}: initial TRMNL weather render must apply the same shared layout refresh as later updates"
+                assert (
+                    phase1_match
+                    and "weather_forecast_cancel_pending_requests();" in phase1_match.group(0)
+                    and phase1_match.group(0).find("weather_forecast_cancel_pending_requests();")
+                    < phase1_match.group(0).find("reset_weather_forecast_cards();")
+                ), f"{slug}: weather forecast callbacks must be cancelled before rebuilding visible card refs"
                 assert "id(font_trmnl_value_32)->get_lv_font()" in sensors, (
                     f"{slug}: normal weather cards must use the TRMNL web preview value font"
                 )
