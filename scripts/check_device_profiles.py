@@ -153,6 +153,11 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                 assert "lv_obj_align(label, LV_ALIGN_BOTTOM_LEFT, 0, 0);" in grid_header, (
                     f"{slug}: clamped card labels must stay bottom-aligned like the web preview"
                 )
+                setup_match = re.search(r"inline void setup_card_visual\([\s\S]*?if \(is_text_sensor_card", grid_header)
+                assert (
+                    setup_match
+                    and "lv_obj_set_style_text_font(s.sensor_lbl, display_sensor_font(display), LV_PART_MAIN)" in setup_match.group(0)
+                ), f"{slug}: normal weather values must reset after large-number card layouts"
                 assert "id(font_trmnl_value_32)->get_lv_font()" in sensors, (
                     f"{slug}: normal weather cards must use the TRMNL web preview value font"
                 )
