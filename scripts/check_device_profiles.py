@@ -120,8 +120,14 @@ def test_generated_yaml(profiles: dict[str, dict]) -> None:
                 assert "id: temperature_unit_select" in device, (
                     f"{slug}: device.yaml must expose the temperature unit setting used by weather cards"
                 )
-                assert 'set_display_temperature_unit(id(temperature_unit_select).current_option(), "UTC (GMT+0)")' in device, (
-                    f"{slug}: temperature unit changes must update the shared display unit helper"
+                assert "id: timezone_select" in device, (
+                    f"{slug}: device.yaml must expose the timezone setting used by Auto temperature units"
+                )
+                assert "cfg.timezone = id(timezone_select).current_option();" in sensors, (
+                    f"{slug}: automatic temperature units must use the configured timezone"
+                )
+                assert "set_display_temperature_unit(id(temperature_unit_select).current_option(),\n                                         id(timezone_select).current_option())" in device, (
+                    f"{slug}: temperature unit and timezone changes must update the shared display unit helper"
                 )
                 assert "apply_registered_ha_control_availability(true);" in device, (
                     f"{slug}: Home Assistant-backed weather cards must become available on connect"
