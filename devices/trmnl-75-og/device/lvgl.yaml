@@ -67,7 +67,7 @@ lvgl:
       height: 428
       bg_color: 0xFFFFFF
       bg_opa: cover
-      pad_all: 0
+      pad_all: 6
       widgets:
         - !include { file: ../../../common/device/button_widget.yaml, vars: { num: "1" } }
         - !include { file: ../../../common/device/button_widget.yaml, vars: { num: "2" } }
