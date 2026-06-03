@@ -1,5 +1,37 @@
 // ── Settings Page ──────────────────────────────────────────────────────
 
+function settingsStatusHeader(title, status) {
+  var header = document.createElement("div");
+  header.className = "sp-settings-status-header";
+
+  var label = document.createElement("div");
+  label.className = "sp-settings-status-title";
+  label.textContent = title;
+  header.appendChild(label);
+
+  if (status) {
+    var statusEl = document.createElement("div");
+    statusEl.className = "sp-settings-status-copy";
+    statusEl.textContent = status;
+    header.appendChild(statusEl);
+  }
+
+  return header;
+}
+
+function appendSettingsSection(parent, title, cards) {
+  var visibleCards = cards.filter(Boolean);
+  if (!visibleCards.length) return;
+
+  parent.appendChild(settingsStatusHeader(
+    title,
+    visibleCards.length + (visibleCards.length === 1 ? " setting" : " settings")
+  ));
+  visibleCards.forEach(function (card) {
+    parent.appendChild(card);
+  });
+}
+
 function buildSettingsPage(parent) {
   var page = document.createElement("div");
   page.id = "sp-settings";
@@ -53,7 +85,7 @@ function buildSettingsPage(parent) {
     els.setSensorColor = sensorColor;
   }
 
-  config.appendChild(makeCollapsibleCard("Appearance", appearBody, true));
+  var appearanceCard = makeCollapsibleCard("Appearance", appearBody, true);
 
   var languageBody = document.createElement("div");
   var languageField = document.createElement("div");
@@ -73,7 +105,7 @@ function buildSettingsPage(parent) {
   });
   languageField.appendChild(languageSelect);
   languageBody.appendChild(languageField);
-  config.appendChild(makeCollapsibleCard("Language", languageBody, true));
+  var languageCard = makeCollapsibleCard("Language", languageBody, true);
   els.setLanguage = languageSelect;
 
   var blBody = document.createElement("div");
@@ -104,7 +136,7 @@ function buildSettingsPage(parent) {
   els.sunInfo = sunInfo;
   updateSunInfo();
 
-  config.appendChild(makeCollapsibleCard("Backlight", blBody, true));
+  var backlightCard = makeCollapsibleCard("Backlight", blBody, true);
 
   var scheduleBody = document.createElement("div");
   var scheduleToggle = toggleRow("Night Schedule", "sp-set-schedule-enabled", state.scheduleEnabled);
@@ -483,8 +515,9 @@ function buildSettingsPage(parent) {
   els.setClockBarBadge = clockBarBadge;
   syncClockBarUi();
   syncTemperatureUi();
-  config.appendChild(makeCollapsibleCard("Clock Bar", clockBarBody, true, clockBarBadge));
+  var clockBarCard = makeCollapsibleCard("Clock Bar", clockBarBody, true, clockBarBadge);
 
+  var rotationCard = null;
   if (CFG.features && CFG.features.screenRotation) {
     var rotationBody = document.createElement("div");
     var rotField = document.createElement("div");
@@ -505,7 +538,7 @@ function buildSettingsPage(parent) {
     });
     rotField.appendChild(rotSelect);
     rotationBody.appendChild(rotField);
-    config.appendChild(makeCollapsibleCard("Rotation", rotationBody, true));
+    rotationCard = makeCollapsibleCard("Rotation", rotationBody, true);
     els.setScreenRotation = rotSelect;
   }
 
@@ -539,7 +572,7 @@ function buildSettingsPage(parent) {
   els.setTemperatureUnit = unitSelect;
 
   syncTemperatureUi();
-  config.appendChild(makeCollapsibleCard("Temperature", tempBody, true));
+  var temperatureCard = makeCollapsibleCard("Temperature", tempBody, true);
 
   var ssBody = document.createElement("div");
   var ssMode = getActiveScreensaverMode();
@@ -846,12 +879,11 @@ function buildSettingsPage(parent) {
   idleBadge.innerHTML = '<span class="sp-card-badge-dot"></span><span>ON</span>';
   els.setIdleBadge = idleBadge;
   syncIdleUi();
-  config.appendChild(makeCollapsibleCard("Idle", idleBody, true, idleBadge));
-  config.appendChild(screensaverCard);
+  var idleCard = makeCollapsibleCard("Idle", idleBody, true, idleBadge);
+  var coverArtCard = null;
   if (!isEpaperPreview()) {
-    config.appendChild(makeCollapsibleCard("Media Cover Art", coverArtBody, true));
+    coverArtCard = makeCollapsibleCard("Media Cover Art", coverArtBody, true);
   }
-  config.appendChild(scheduleCard);
 
   var backupBody = document.createElement("div");
 
@@ -871,8 +903,7 @@ function buildSettingsPage(parent) {
   backupRow.appendChild(importBtn);
 
   backupBody.appendChild(backupRow);
-  config.appendChild(timeSettingsCard);
-  config.appendChild(makeCollapsibleCard("Backup", backupBody, true));
+  var backupCard = makeCollapsibleCard("Backup", backupBody, true);
 
   var fwBody = document.createElement("div");
 
@@ -974,8 +1005,9 @@ function buildSettingsPage(parent) {
   els.setUpdateFreq = freqSelect;
   syncFirmwareUpdateUi();
 
-  config.appendChild(makeCollapsibleCard("Firmware", fwBody, true));
+  var firmwareCard = makeCollapsibleCard("Firmware", fwBody, true);
 
+  var developerCard = null;
   if (developerExperimentalUrlFlag()) {
     var devBody = document.createElement("div");
     var experimentalToggle = toggleRow(
@@ -990,8 +1022,29 @@ function buildSettingsPage(parent) {
       scheduleRender();
     });
     els.setDeveloperExperimentalFeatures = experimentalToggle.input;
-    config.appendChild(makeCollapsibleCard("Developer", devBody, true));
+    developerCard = makeCollapsibleCard("Developer", devBody, true);
   }
+
+  appendSettingsSection(config, "Display", [
+    appearanceCard,
+    backlightCard,
+    clockBarCard,
+    rotationCard,
+    temperatureCard,
+  ]);
+  appendSettingsSection(config, "Sleep & Schedule", [
+    idleCard,
+    screensaverCard,
+    coverArtCard,
+    scheduleCard,
+  ]);
+  appendSettingsSection(config, "System", [
+    languageCard,
+    timeSettingsCard,
+    backupCard,
+    firmwareCard,
+    developerCard,
+  ]);
 
   page.appendChild(config);
   page.appendChild(buildApplyBar());
