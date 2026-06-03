@@ -55,6 +55,12 @@ globals:
     type: int
     initial_value: '-1'
 
+esphome:
+  on_boot:
+    priority: 250
+    then:
+      - script.execute: cover_art_resubscribe
+
 api:
   on_client_connected:
     - lambda: |-
@@ -71,9 +77,6 @@ api:
         ESP_LOGI("cover_art", "Using Home Assistant artwork base URL: %s",
                  id(cover_art_home_assistant_base_url).c_str());
     - delay: 2s
-    - globals.set:
-        id: cover_art_subscribed_entity
-        value: '""'
     - script.execute: cover_art_resubscribe
 
 image:
@@ -533,11 +536,6 @@ script:
           }
           id(cover_art_empty_entity_logged) = false;
           if (cover_entity == id(cover_art_subscribed_entity)) return;
-          if (!ha_api_state_connected()) {
-            ESP_LOGW("cover_art", "Waiting for Home Assistant state connection before subscribing to %s",
-                     cover_entity.c_str());
-            return;
-          }
           id(cover_art_subscribed_entity) = cover_entity;
           ESP_LOGI("cover_art", "Subscribing to artwork entity: %s", cover_entity.c_str());
 
