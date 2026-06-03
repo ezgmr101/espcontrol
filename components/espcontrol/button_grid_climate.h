@@ -242,9 +242,16 @@ inline int climate_clamp_tenths(ClimateControlCtx *ctx, int value) {
   return value;
 }
 
+inline int climate_effective_step_tenths(ClimateControlCtx *ctx) {
+  if (!ctx) return CLIMATE_DEFAULT_STEP_TENTHS;
+  if (ctx->step_tenths > CLIMATE_DEFAULT_STEP_TENTHS && ctx->step_tenths <= 100)
+    return ctx->step_tenths;
+  return CLIMATE_DEFAULT_STEP_TENTHS;
+}
+
 inline int climate_round_to_step(ClimateControlCtx *ctx, int value) {
   if (!ctx) return value;
-  int step = ctx->step_tenths > 0 && ctx->step_tenths <= 100 ? ctx->step_tenths : CLIMATE_DEFAULT_STEP_TENTHS;
+  int step = climate_effective_step_tenths(ctx);
   int base = ctx->min_tenths;
   int delta = value - base;
   int rounded = base + ((delta >= 0 ? delta + step / 2 : delta - step / 2) / step) * step;
@@ -275,7 +282,7 @@ inline int climate_constrain_selected_target(ClimateControlCtx *ctx, int value) 
   if (!ctx) return CLIMATE_DEFAULT_TARGET_TENTHS;
   value = climate_clamp_tenths(ctx, value);
   if (climate_dual_target(ctx)) {
-    int gap = ctx->step_tenths > 0 ? ctx->step_tenths : CLIMATE_DEFAULT_STEP_TENTHS;
+    int gap = climate_effective_step_tenths(ctx);
     if (ctx->edit_high && value <= ctx->low_tenths) value = ctx->low_tenths + gap;
     else if (!ctx->edit_high && value >= ctx->high_tenths) value = ctx->high_tenths - gap;
     value = climate_clamp_tenths(ctx, value);
@@ -1641,12 +1648,12 @@ inline void climate_control_open_modal(ClimateControlCtx *ctx) {
   lv_obj_add_event_cb(ui.minus_btn, [](lv_event_t *) {
     ClimateControlModalUi &ui = climate_control_modal_ui();
     if (ui.active) climate_apply_selected_target(ui.active,
-      climate_selected_target(ui.active) - ui.active->step_tenths, false, true);
+      climate_selected_target(ui.active) - climate_effective_step_tenths(ui.active), false, true);
   }, LV_EVENT_CLICKED, nullptr);
   lv_obj_add_event_cb(ui.plus_btn, [](lv_event_t *) {
     ClimateControlModalUi &ui = climate_control_modal_ui();
     if (ui.active) climate_apply_selected_target(ui.active,
-      climate_selected_target(ui.active) + ui.active->step_tenths, false, true);
+      climate_selected_target(ui.active) + climate_effective_step_tenths(ui.active), false, true);
   }, LV_EVENT_CLICKED, nullptr);
 
   ui.chips = lv_obj_create(ui.panel);
