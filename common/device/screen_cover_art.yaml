@@ -548,13 +548,28 @@ script:
                 if (cover_entity != id(cover_art_media_player_entity).state) return;
                 std::string state_text = string_ref_limited(state, HA_SHORT_STATE_MAX_LEN);
                 bool playing = state_text == "playing";
-                id(cover_art_media_playing) = playing;
                 auto now = id(panel_time).now();
-                if (playing && now.is_valid() && id(cover_art_position_anchor_epoch) == 0) {
-                  id(cover_art_last_position_timestamp) = now.timestamp;
+                if (playing) {
+                  id(cover_art_media_playing) = true;
+                  if (now.is_valid() && id(cover_art_position_anchor_epoch) == 0) {
+                    id(cover_art_last_position_timestamp) = now.timestamp;
+                  }
+                  id(cover_art_playback_started).execute();
+                  return;
                 }
-                if (playing) id(cover_art_playback_started).execute();
-                else id(cover_art_playback_stopped).execute();
+
+                if (state_text == "paused") {
+                  if (id(cover_art_screensaver_active)) id(cover_art_refresh_progress).execute();
+                  id(cover_art_media_playing) = false;
+                  id(cover_art_position_anchor) = id(cover_art_media_position);
+                  id(cover_art_position_anchor_epoch) = 0;
+                  id(cover_art_last_position_timestamp) = now.is_valid() ? now.timestamp : 0;
+                  id(cover_art_last_progress_percent) = -1;
+                  if (id(cover_art_screensaver_active)) id(cover_art_refresh_progress).execute();
+                  return;
+                }
+
+                id(cover_art_playback_stopped).execute();
               })
           );
 
