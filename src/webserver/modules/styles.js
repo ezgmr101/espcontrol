@@ -45,14 +45,14 @@ var CSS =
   ".sp-topbar{position:absolute;top:0;left:0;right:0;height:var(--topbar-h);" +
   "display:flex;align-items:center;padding:var(--topbar-pad);z-index:1}" +
   ".sp-topbar.sp-hidden{display:none}" +
-  ".sp-clockbar-item{height:100%;min-width:calc(var(--topbar-fs)*1.6);border:1px solid transparent;border-radius:calc(var(--topbar-fs)*.36);" +
+  ".sp-clockbar-item{height:max(100%,44px);min-width:max(44px,calc(var(--topbar-fs)*2.8));border:1px solid transparent;border-radius:calc(var(--topbar-fs)*.36);" +
   "background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 calc(var(--topbar-fs)*.28);" +
   "box-sizing:border-box;cursor:pointer;transition:background .16s,border-color .16s,box-shadow .16s;line-height:1;font:inherit}" +
   ".sp-clockbar-item:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.2)}" +
   ".sp-clockbar-item.sp-selected{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}" +
   ".sp-clockbar-temp{margin-left:1cqw}" +
   ".sp-clockbar-time{position:absolute;left:50%;transform:translateX(-50%)}" +
-  ".sp-clockbar-network{margin-left:auto;margin-right:1cqw;padding:0;width:calc(var(--topbar-fs)*1.8)}" +
+  ".sp-clockbar-network{margin-left:auto;margin-right:1cqw;padding:0;width:max(44px,calc(var(--topbar-fs)*2.8))}" +
   ".sp-temp{color:#fff;font-size:var(--topbar-fs);white-space:nowrap;opacity:0;transition:opacity .3s}" +
   ".sp-temp.sp-visible{opacity:1}" +
   ".sp-clock{color:#fff;font-size:var(--clock-fs,var(--topbar-fs));white-space:nowrap;opacity:1;transition:opacity .3s}" +

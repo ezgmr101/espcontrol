@@ -560,6 +560,16 @@ async function assertEditAndApplySmoke(page, posts, errors) {
 async function assertClockBarEditorSmoke(page, posts, label) {
   await page.getByRole("tab", { name: "Screen" }).click();
   await page.waitForSelector("#sp-screen.sp-page.active");
+  for (const selector of [
+    '[data-clockbar-item="temperature"]',
+    '[data-clockbar-item="time"]',
+    '[data-clockbar-item="network"]',
+  ]) {
+    const box = await page.locator(selector).boundingBox();
+    assert(box, `${label}: ${selector} has a visible hit area`);
+    assert(box.width >= 44, `${label}: ${selector} hit area is at least 44px wide`);
+    assert(box.height >= 44, `${label}: ${selector} hit area is at least 44px tall`);
+  }
 
   let before = posts.length;
   await page.locator('[data-clockbar-item="time"]').click();
@@ -590,8 +600,9 @@ async function assertClockBarEditorSmoke(page, posts, label) {
 
   before = posts.length;
   await page.locator('[data-clockbar-item="temperature"]').click();
-  await page.locator("#sp-clockbar-temperature-unit").waitFor({ state: "visible" });
+  await page.getByText("Show Degree Symbol", { exact: true }).waitFor({ state: "visible" });
   assert(await page.locator(".sp-section-title", { hasText: "Temperature" }).isVisible(), `${label}: temperature editor opens`);
+  assert.strictEqual(await page.locator("#sp-clockbar-temperature-unit").count(), 0, `${label}: temperature unit selector stays out of clock bar editor`);
   await page.getByRole("button", { name: "Delete" }).click();
   await waitForPost(posts, { domain: "switch", name: "indoor_temp_enable", action: "turn_off" }, `${label}: delete indoor temperature`, before);
   await waitForPost(posts, { domain: "switch", name: "outdoor_temp_enable", action: "turn_off" }, `${label}: delete outdoor temperature`, before);
@@ -600,7 +611,7 @@ async function assertClockBarEditorSmoke(page, posts, label) {
   await page.locator('[data-clockbar-item="temperature"]').click();
   await waitForPost(posts, { domain: "switch", name: "indoor_temp_enable", action: "turn_on" }, `${label}: add indoor temperature`, before);
   await waitForPost(posts, { domain: "switch", name: "outdoor_temp_enable", action: "turn_on" }, `${label}: add outdoor temperature`, before);
-  await page.locator("#sp-clockbar-temperature-unit").waitFor({ state: "visible" });
+  await page.getByText("Show Degree Symbol", { exact: true }).waitFor({ state: "visible" });
   await page.locator(".sp-settings-close").click();
 
   await page.getByRole("tab", { name: "Settings" }).click();
