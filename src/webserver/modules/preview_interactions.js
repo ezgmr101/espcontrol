@@ -193,14 +193,57 @@ function setupPreviewEvents() {
         e.stopPropagation();
         return;
       }
+      var addTarget = e.target.closest("[data-clockbar-add]");
+      if (addTarget && els.topbar.contains(addTarget)) {
+        e.preventDefault();
+        e.stopPropagation();
+        showClockBarAddMenu(e, addTarget.getAttribute("data-clockbar-add"));
+        clearTextSelection();
+        return;
+      }
       var target = e.target.closest("[data-clockbar-item]");
       if (!target || !els.topbar.contains(target)) return;
       e.preventDefault();
       e.stopPropagation();
       var item = target.getAttribute("data-clockbar-item");
-      if (!clockBarItemActive(item)) addClockBarItem(item);
       setClockBarItemSelected(item, true);
       clearTextSelection();
+    });
+
+    els.topbar.addEventListener("dragstart", function (e) {
+      if (isConfigLocked()) return;
+      var target = e.target.closest("[data-clockbar-item]");
+      if (!target || !els.topbar.contains(target)) return;
+      state.clockBarDragItem = target.getAttribute("data-clockbar-item");
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", state.clockBarDragItem);
+      }
+    });
+
+    els.topbar.addEventListener("dragover", function (e) {
+      if (isConfigLocked() || !state.clockBarDragItem) return;
+      var section = e.target.closest("[data-clockbar-section]");
+      if (!section || !els.topbar.contains(section)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    });
+
+    els.topbar.addEventListener("drop", function (e) {
+      if (isConfigLocked()) return;
+      var section = e.target.closest("[data-clockbar-section]");
+      if (!section || !els.topbar.contains(section)) return;
+      var item = state.clockBarDragItem || (e.dataTransfer && e.dataTransfer.getData("text/plain"));
+      if (!item) return;
+      e.preventDefault();
+      e.stopPropagation();
+      moveClockBarItem(item, section.getAttribute("data-clockbar-section"));
+      setClockBarItemSelected(item, false);
+      state.clockBarDragItem = "";
+    });
+
+    els.topbar.addEventListener("dragend", function () {
+      state.clockBarDragItem = "";
     });
   }
 
@@ -915,6 +958,30 @@ function showEmptySlotMenu(e, pos) {
   addCtxItem("plus", "Create Card", function () { addSlot(pos); });
   if (!c.isSub) {
     addCtxItem("folder-plus", "Create Subpage", function () { addSubpageSlot(pos); });
+  }
+  document.body.appendChild(ctxMenu);
+  positionMenu(ctxMenu, e);
+}
+
+function showClockBarAddMenu(e, section) {
+  if (isConfigLocked()) return;
+  hideContextMenu();
+  ctxMenu = document.createElement("div");
+  ctxMenu.className = "sp-ctx-menu";
+  var options = clockBarItemsAvailableToAdd(section);
+  if (!options.length) {
+    var empty = document.createElement("div");
+    empty.className = "sp-ctx-item sp-ctx-disabled";
+    empty.textContent = "No items available";
+    ctxMenu.appendChild(empty);
+  } else {
+    options.forEach(function (item) {
+      addCtxItem(clockBarItemIcon(item), clockBarItemLabel(item), function () {
+        addClockBarItem(item);
+        moveClockBarItem(item, section);
+        setClockBarItemSelected(item, true);
+      });
+    });
   }
   document.body.appendChild(ctxMenu);
   positionMenu(ctxMenu, e);

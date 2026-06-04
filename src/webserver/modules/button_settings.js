@@ -208,15 +208,6 @@ function renderClockBarSettings(forceOpen) {
       postTemperatureDegreeSymbol(state.temperatureDegreeSymbolOn);
     });
   } else if (item === "time") {
-    var timeToggle = toggleRow("Show Time", "sp-clockbar-time-toggle", state.clockBarTimeOn);
-    panel.appendChild(timeToggle.row);
-    els.setClockBarTimeToggle = timeToggle.input;
-    timeToggle.input.addEventListener("change", function () {
-      state.clockBarTimeOn = this.checked;
-      syncClockBarUi();
-      postClockBarTime(state.clockBarTimeOn);
-    });
-
     var timezoneSelect = document.createElement("select");
     timezoneSelect.className = "sp-select";
     timezoneSelect.id = "sp-clockbar-timezone";
@@ -244,15 +235,6 @@ function renderClockBarSettings(forceOpen) {
       updateClock();
       renderPreview();
     }));
-  } else if (item === "network") {
-    var networkStatus = toggleRow("Show Network Status Icon", "sp-clockbar-network-status-icon", state.networkStatusOn);
-    panel.appendChild(networkStatus.row);
-    els.setNetworkStatusToggle = networkStatus.input;
-    networkStatus.input.addEventListener("change", function () {
-      state.networkStatusOn = this.checked;
-      syncClockBarUi();
-      postNetworkStatusIcon(state.networkStatusOn);
-    });
   }
 
   var row = document.createElement("div");

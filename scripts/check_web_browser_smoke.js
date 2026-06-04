@@ -571,6 +571,13 @@ async function assertClockBarEditorSmoke(page, posts, label) {
     assert(box.height >= 44, `${label}: ${selector} hit area is at least 44px tall`);
   }
 
+  await page.dragAndDrop('[data-clockbar-item="time"]', '[data-clockbar-section="left"]');
+  assert.strictEqual(
+    await page.locator('[data-clockbar-item="time"]').getAttribute("data-clockbar-section"),
+    "left",
+    `${label}: time can be dragged to the left clock bar section`
+  );
+
   let before = posts.length;
   await page.locator('[data-clockbar-item="time"]').click();
   await page.waitForSelector(".sp-settings-overlay.sp-visible");
@@ -578,24 +585,27 @@ async function assertClockBarEditorSmoke(page, posts, label) {
   assert(await page.locator(".sp-section-title", { hasText: "Time" }).isVisible(), `${label}: time editor opens`);
   await page.getByRole("button", { name: "Delete" }).click();
   await waitForPost(posts, { domain: "switch", name: "screen__clock_bar_time", action: "turn_off" }, `${label}: delete time`, before);
-  await page.locator('[data-clockbar-item="time"].sp-clockbar-inactive').waitFor({ state: "visible" });
+  await page.locator('[data-clockbar-item="time"]').waitFor({ state: "detached" });
   before = posts.length;
-  await page.locator('[data-clockbar-item="time"]').click();
+  await page.locator('[data-clockbar-section="middle"] [data-clockbar-add]').click();
+  await page.getByText("Time", { exact: true }).click();
   await waitForPost(posts, { domain: "switch", name: "screen__clock_bar_time", action: "turn_on" }, `${label}: add time`, before);
+  await page.locator('[data-clockbar-item="time"][data-clockbar-section="middle"]').waitFor({ state: "visible" });
   await page.locator("#sp-clockbar-clock-format").waitFor({ state: "visible" });
   await page.locator(".sp-settings-close").click();
 
   before = posts.length;
   await page.locator('[data-clockbar-item="network"]').click();
-  await page.getByText("Show Network Status Icon", { exact: true }).waitFor({ state: "visible" });
   assert(await page.locator(".sp-section-title", { hasText: "Network Status" }).isVisible(), `${label}: network editor opens`);
+  assert.strictEqual(await page.locator("#sp-clockbar-network-status-icon").count(), 0, `${label}: network visibility toggle stays out of clock bar editor`);
   await page.getByRole("button", { name: "Delete" }).click();
   await waitForPost(posts, { domain: "switch", name: "screen__network_status_icon", action: "turn_off" }, `${label}: delete network`, before);
-  await page.locator('[data-clockbar-item="network"].sp-clockbar-inactive').waitFor({ state: "visible" });
+  await page.locator('[data-clockbar-item="network"]').waitFor({ state: "detached" });
   before = posts.length;
-  await page.locator('[data-clockbar-item="network"]').click();
+  await page.locator('[data-clockbar-section="right"] [data-clockbar-add]').click();
+  await page.getByText("Network Status", { exact: true }).click();
   await waitForPost(posts, { domain: "switch", name: "screen__network_status_icon", action: "turn_on" }, `${label}: add network`, before);
-  await page.getByText("Show Network Status Icon", { exact: true }).waitFor({ state: "visible" });
+  await page.locator('[data-clockbar-item="network"][data-clockbar-section="right"]').waitFor({ state: "visible" });
   await page.locator(".sp-settings-close").click();
 
   before = posts.length;
@@ -606,11 +616,13 @@ async function assertClockBarEditorSmoke(page, posts, label) {
   await page.getByRole("button", { name: "Delete" }).click();
   await waitForPost(posts, { domain: "switch", name: "indoor_temp_enable", action: "turn_off" }, `${label}: delete indoor temperature`, before);
   await waitForPost(posts, { domain: "switch", name: "outdoor_temp_enable", action: "turn_off" }, `${label}: delete outdoor temperature`, before);
-  await page.locator('[data-clockbar-item="temperature"].sp-clockbar-inactive').waitFor({ state: "visible" });
+  await page.locator('[data-clockbar-item="temperature"]').waitFor({ state: "detached" });
   before = posts.length;
-  await page.locator('[data-clockbar-item="temperature"]').click();
+  await page.locator('[data-clockbar-section="left"] [data-clockbar-add]').click();
+  await page.getByText("Temperature", { exact: true }).click();
   await waitForPost(posts, { domain: "switch", name: "indoor_temp_enable", action: "turn_on" }, `${label}: add indoor temperature`, before);
   await waitForPost(posts, { domain: "switch", name: "outdoor_temp_enable", action: "turn_on" }, `${label}: add outdoor temperature`, before);
+  await page.locator('[data-clockbar-item="temperature"][data-clockbar-section="left"]').waitFor({ state: "visible" });
   await page.getByText("Show Degree Symbol", { exact: true }).waitFor({ state: "visible" });
   await page.locator(".sp-settings-close").click();
 
