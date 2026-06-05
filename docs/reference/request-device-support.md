@@ -8,6 +8,8 @@ description:
 
 EspControl can only support a new device type properly when we know how Home Assistant exposes it. The easiest way to help is to copy the device's state information from Home Assistant and share it in a GitHub issue.
 
+Sorry, but I can't support additional screens because of the complexity of testing the existing range of devices.
+
 ## Find the Device State
 
 1. Open **Home Assistant**.
