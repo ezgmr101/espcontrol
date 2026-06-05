@@ -457,6 +457,7 @@ export default defineConfig({
         text: 'Reference',
         items: [
           { text: 'Icon Reference', link: '/reference/icons' },
+          { text: 'Request Device Support', link: '/reference/request-device-support' },
           { text: 'FAQ', link: '/reference/faq' },
           { text: 'Roadmap', link: '/reference/roadmap' },
         ],
