@@ -79,8 +79,7 @@ font:
     id: font_text_large
     size: 37
     bpp: 4
-    glyphs:
-      - " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz/°"
+    glyphs: !include ../../../common/assets/text_glyphs.yaml
 
   # Normal sensor values
   - file: "gfonts://Roboto@Light"
