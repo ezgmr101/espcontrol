@@ -647,6 +647,20 @@ async function assertClockBarEditorSmoke(page, posts, label) {
       `${label}: ${selector} hover height matches add control`
     );
   }
+  await page.locator('.sp-clockbar-section[data-clockbar-section="left"]').hover();
+  const initialLeftItemBoxes = await page.locator('[data-clockbar-item][data-clockbar-section="left"]').evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { right: rect.right };
+    })
+  );
+  const initialLeftAddBox = await page.locator('[data-clockbar-section="left"] [data-clockbar-add]').boundingBox();
+  const initialLeftContentRight = Math.max(...initialLeftItemBoxes.map((box) => box.right));
+  assert(Number.isFinite(initialLeftContentRight) && initialLeftAddBox, `${label}: left clock bar controls are measurable`);
+  assert(
+    initialLeftAddBox.x - initialLeftContentRight <= 12,
+    `${label}: left add control sits beside left-side content`
+  );
 
   await page.dragAndDrop('[data-clockbar-item="time"]', '[data-clockbar-section="left"]');
   assert.strictEqual(
@@ -715,6 +729,10 @@ async function assertClockBarEditorSmoke(page, posts, label) {
   assert(
     rightAddAfterBox.x < networkBox.x,
     `${label}: right add control appears to the left of right-side controls`
+  );
+  assert(
+    networkBox.x - (rightAddAfterBox.x + rightAddAfterBox.width) <= 12,
+    `${label}: right add control sits beside right-side content`
   );
   assert(
     Math.abs(networkBox.width - rightAddAfterBox.width) <= 1 &&
