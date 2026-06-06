@@ -1275,7 +1275,7 @@ script:
                        cover_entity.c_str(), state_text.c_str(),
                        id(cover_art_screensaver_active) ? "true" : "false",
                        id(cover_art_media_playing) ? "true" : "false");
-              bool playing = state_text == "playing";
+              bool playing = state_text == "playing" || state_text == "buffering";
               auto now = id(panel_time).now();
               if (playing) {
                 bool was_playing = id(cover_art_media_playing);
