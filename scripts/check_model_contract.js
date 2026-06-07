@@ -230,6 +230,24 @@ assert.strictEqual(panelSettings.ntpServer1, "pool.ntp.org", "panel NTP server i
 assert.strictEqual(panelSettings.screensaverMode, "timer", "panel screensaver mode imports");
 assert.strictEqual(panelSettings.screensaverAction, "dim", "panel screensaver action imports");
 assert.strictEqual(panelSettings.coverArtHideExternalInput, true, "panel cover art external-input setting imports");
+assert.strictEqual(
+  model.normalizeBackupPanelSettings({
+    media_player_sleep_prevention_entity: "media_player.living",
+  }, {
+    timezone: "UTC (GMT+0)",
+    language: "en",
+    clockFormat: "12h",
+    clockFormatOptions: ["12h", "24h"],
+    developerExperimentalFeatures: false,
+    ntpDefaults: ["0.pool.ntp.org", "1.pool.ntp.org", "2.pool.ntp.org"],
+    ntpServer1: "0.pool.ntp.org",
+    ntpServer2: "1.pool.ntp.org",
+    ntpServer3: "2.pool.ntp.org",
+    screenRotationOptions: ["0", "90", "180", "270"],
+  }).coverArtMediaPlayerEntity,
+  "media_player.living",
+  "legacy sleep prevention media player imports into cover art media player"
+);
 assert.strictEqual(panelSettings.clockBrightnessDay, 44, "panel day clock brightness imports");
 assert.strictEqual(panelSettings.clockBrightnessNight, 22, "panel night clock brightness imports");
 assert.strictEqual(panelSettings.subpageChevron, true, "panel subpage chevron defaults on");

@@ -535,21 +535,6 @@ function buildSettingsPage(parent) {
   });
   els.setMediaPlayerSleepPreventionToggle = mediaPlayerToggle.input;
 
-  var mediaPlayerField = document.createElement("div");
-  mediaPlayerField.className = "sp-field sp-cond-field";
-  mediaPlayerField.appendChild(fieldLabel("Media Player Entity", "sp-set-ss-media-player"));
-  var mediaPlayerInp = textInput(
-    "sp-set-ss-media-player",
-    state.mediaPlayerSleepPreventionEntity,
-    "e.g. media_player.living_room");
-  mediaPlayerField.appendChild(mediaPlayerInp);
-  timerPanel.appendChild(mediaPlayerField);
-  bindTextPost(mediaPlayerInp, entityName("media_player_sleep_prevention_entity"), {
-    onBlur: function (value) { state.mediaPlayerSleepPreventionEntity = value; },
-  });
-  els.setMediaPlayerSleepPrevention = mediaPlayerInp;
-  els.setMediaPlayerSleepPreventionField = mediaPlayerField;
-
   var coverArtBody = document.createElement("div");
   if (!isEpaperPreview()) {
     var coverArtToggle = toggleRow(
@@ -979,9 +964,6 @@ function syncClockScreensaverControls() {
 function syncMediaPlayerSleepPreventionUi() {
   if (els.setMediaPlayerSleepPreventionToggle) {
     els.setMediaPlayerSleepPreventionToggle.checked = !!state.mediaPlayerSleepPreventionOn;
-  }
-  if (els.setMediaPlayerSleepPreventionField) {
-    els.setMediaPlayerSleepPreventionField.classList.toggle("sp-visible", !!state.mediaPlayerSleepPreventionOn);
   }
 }
 

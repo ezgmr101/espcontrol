@@ -930,7 +930,7 @@ var EspControlModel = (() => {
       mediaPlayerSleepPrevention: !!settings.media_player_sleep_prevention,
       mediaPlayerSleepPreventionEntity: String(settings.media_player_sleep_prevention_entity || ""),
       coverArtScreensaver: !!settings.cover_art_screensaver,
-      coverArtMediaPlayerEntity: String(settings.cover_art_media_player_entity || ""),
+      coverArtMediaPlayerEntity: String(settings.cover_art_media_player_entity || settings.media_player_sleep_prevention_entity || ""),
       coverArtHomeAssistantUrl: String(settings.cover_art_home_assistant_url || ""),
       coverArtDelay: objectValue(settings, "cover_art_delay") != null ? settings.cover_art_delay : 10,
       coverArtTrackOverlayDuration: objectValue(settings, "cover_art_track_overlay_duration") != null ? settings.cover_art_track_overlay_duration : 5,

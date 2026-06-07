@@ -38,7 +38,7 @@ function exportConfig() {
       screensaver_mode: getActiveScreensaverMode(),
       presence_sensor_entity: state.presenceEntity,
       media_player_sleep_prevention: state.mediaPlayerSleepPreventionOn,
-      media_player_sleep_prevention_entity: state.mediaPlayerSleepPreventionEntity,
+      media_player_sleep_prevention_entity: state.coverArtMediaPlayerEntity,
       cover_art_screensaver: state.coverArtScreensaverOn,
       cover_art_media_player_entity: state.coverArtMediaPlayerEntity,
       cover_art_home_assistant_url: state.coverArtHomeAssistantUrl,
@@ -217,7 +217,6 @@ function importConfig() {
         postText(entityName("screensaver_mode"), importedScreensaverMode);
         postText(entityName("presence_sensor_entity"), importedSettings.presenceSensorEntity);
         postSwitch(entityName("screen_saver_media_player_sleep_prevention"), importedSettings.mediaPlayerSleepPrevention);
-        postText(entityName("media_player_sleep_prevention_entity"), importedSettings.mediaPlayerSleepPreventionEntity);
         postSwitch(entityName("screen_saver_cover_art"), importedSettings.coverArtScreensaver);
         postText(entityName("screen_saver_cover_art_entity"), importedSettings.coverArtMediaPlayerEntity);
         postText(entityName("screen_saver_cover_art_ha_url"), importedSettings.coverArtHomeAssistantUrl);
@@ -268,7 +267,7 @@ function importConfig() {
         state._screensaverModeReceived = true;
         state.presenceEntity = importedSettings.presenceSensorEntity;
         state.mediaPlayerSleepPreventionOn = importedSettings.mediaPlayerSleepPrevention;
-        state.mediaPlayerSleepPreventionEntity = importedSettings.mediaPlayerSleepPreventionEntity;
+        state.mediaPlayerSleepPreventionEntity = importedSettings.coverArtMediaPlayerEntity;
         state.coverArtScreensaverOn = importedSettings.coverArtScreensaver;
         state.coverArtMediaPlayerEntity = importedSettings.coverArtMediaPlayerEntity;
         state.coverArtHomeAssistantUrl = importedSettings.coverArtHomeAssistantUrl;
@@ -294,7 +293,6 @@ function importConfig() {
         syncClockBarUi();
         if (els.setTemperatureUnit) els.setTemperatureUnit.value = state.temperatureUnit;
         syncInput(els.setPresence, state.presenceEntity);
-        syncInput(els.setMediaPlayerSleepPrevention, state.mediaPlayerSleepPreventionEntity);
         syncMediaPlayerSleepPreventionUi();
         syncInput(els.setCoverArtMediaPlayer, state.coverArtMediaPlayerEntity);
         syncCoverArtScreensaverUi();

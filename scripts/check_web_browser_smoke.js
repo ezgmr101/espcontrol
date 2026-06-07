@@ -292,6 +292,10 @@ async function assertSettingsPage(page, label, options = {}) {
       `${label}: cover art fallback URL field should not render`
     );
   }
+  assert(
+    await page.locator("#sp-set-ss-media-player").count() === 0,
+    `${label}: timer media player field should not render`
+  );
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   assert(!overflow, `${label}: settings page has horizontal overflow`);
   await page.getByRole("tab", { name: "Screen" }).click();

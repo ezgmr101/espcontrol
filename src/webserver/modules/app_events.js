@@ -226,7 +226,10 @@ function connectEvents() {
     },
     "text-media_player_sleep_prevention_entity": function (val) {
       state.mediaPlayerSleepPreventionEntity = val;
-      syncInput(els.setMediaPlayerSleepPrevention, val);
+      if (!state.coverArtMediaPlayerEntity) {
+        state.coverArtMediaPlayerEntity = val;
+        syncInput(els.setCoverArtMediaPlayer, val);
+      }
     },
     "text-screen_saver__cover_art_entity": function (val) {
       state.coverArtMediaPlayerEntity = val;
