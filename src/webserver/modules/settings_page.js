@@ -524,7 +524,7 @@ function buildSettingsPage(parent) {
   els.setClockBrightnessField = timerClockControls.brightnessField;
 
   var mediaPlayerToggle = toggleRow(
-    "Keep Awake Media Player",
+    "Always show cover art",
     "sp-set-ss-media-player-enable",
     state.mediaPlayerSleepPreventionOn);
   timerPanel.appendChild(mediaPlayerToggle.row);
