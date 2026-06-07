@@ -361,6 +361,7 @@ var CSS =
   ".sp-segment button:hover{color:var(--text)}" +
   ".sp-segment button.active{background:var(--accent);color:#fff}" +
   ".sp-screensaver-mode{margin-bottom:24px}" +
+  ".sp-clock-brightness-field{margin:18px 0 22px}" +
 
   ".sp-cond-field{padding:0 0 4px;display:none}" +
   ".sp-cond-field.sp-visible{display:block}" +

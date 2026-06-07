@@ -1089,6 +1089,7 @@ function createScreensaverThenControls(selectId) {
   dimBrightnessField.appendChild(dimSlider.wrap);
 
   var clockBrightnessField = document.createElement("div");
+  clockBrightnessField.className = "sp-clock-brightness-field";
   clockBrightnessField.style.display = normalizeScreensaverAction(state.screensaverAction) === "clock" ? "" : "none";
   var daySlider = createRangeSlider("Daytime Clock Brightness", state.clockBrightnessDay, postClockBrightnessDay);
   daySlider.range.min = "1";
