@@ -233,6 +233,11 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
       state._clockBarStateValues = oldSourceValues;
       return result;
     },
+    removedLegacyStateEvent: function (event) {
+      var keys = entityStateKeys(event || {});
+      var id = keys[0] || event && event.id || "";
+      return isRemovedLegacyStateEvent(id, event || {});
+    },
     normalizeScreensaverDimmedBrightness: normalizeScreensaverDimmedBrightness,
     previewHtmlValue: previewHtmlValue,
     buttonTypePreviewFor: function (type, button, options) {

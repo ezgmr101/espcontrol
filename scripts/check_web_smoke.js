@@ -102,6 +102,14 @@ assert.strictEqual(hooks.clockBarStateAfterEvents([
   { id: "switch-screen__clock_bar", state: "ON", value: true },
   { id: "switch-screen__clock_bar", state: "OFF", value: false },
 ]), false, "clock bar preview still turns off when the same source reports off");
+assert.strictEqual(hooks.removedLegacyStateEvent({
+  id: "text-screen_saver__cover_art_fallback_server",
+  state: "http://old-art-server.local",
+}), true, "cover art fallback server is treated as a removed legacy event");
+assert.strictEqual(hooks.removedLegacyStateEvent({
+  id: "text-screen_saver__cover_art_entity",
+  state: "media_player.living_room",
+}), false, "current cover art entity events are not treated as removed legacy events");
 
 const manifest = JSON.parse(fs.readFileSync(DEVICE_MANIFEST, "utf8"));
 for (const slug of Object.keys(manifest.devices || {})) {

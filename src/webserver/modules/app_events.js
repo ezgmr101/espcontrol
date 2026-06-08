@@ -45,6 +45,14 @@ function applyClockBarStateValue(val, d, matchedKey) {
   return state.clockBarOn !== previous;
 }
 
+function isRemovedLegacyStateEvent(id, d) {
+  var keys = entityStateKeys(d || {});
+  uniquePush(keys, id);
+  return keys.indexOf("text-screen_saver__cover_art_fallback_server") !== -1 ||
+    keys.indexOf("text-screen_saver_cover_art_fallback_server") !== -1 ||
+    keys.indexOf("text-cover_art_fallback_server") !== -1;
+}
+
 function connectEvents() {
   if (_eventSource) { _eventSource.close(); _eventSource = null; }
 
@@ -601,6 +609,7 @@ function connectEvents() {
       renderFirmwareUpdateStatus();
       return;
     }
+    if (isRemovedLegacyStateEvent(id, d)) return;
 
     for (var i = 0; i < ssePatterns.length; i++) {
       for (var pk = 0; pk < keys.length; pk++) {
