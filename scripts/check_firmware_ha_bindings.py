@@ -674,7 +674,7 @@ def firmware_image_card_quality_errors(firmware_dir: Path, root: Path) -> list[s
         errors.append(f"{rel}: set image card download target size before requesting images")
     if "modal_image" not in text or "image_card_request_modal_source_url" not in text:
         errors.append(f"{rel}: use a separate modal image downloader for expanded image-card quality")
-    if "ctx->modal_image->request_update_url(ctx->modal_url)" not in text:
+    if "ctx->modal_image->request_update_url(ctx->modal_url" not in text:
         errors.append(f"{rel}: request expanded image-card downloads through the modal downloader")
     if "image_card_set_widget_source(ui.image_widget, ctx->modal_image)" not in text:
         errors.append(f"{rel}: swap expanded image cards to the modal-quality image after it downloads")
@@ -714,8 +714,10 @@ def firmware_image_card_startup_errors(
         errors.append(f"{rel}: arm image-card refresh from the Home Assistant API connection")
     if "if (!ha_api_state_connected())" not in text:
         errors.append(f"{rel}: wait for Home Assistant state subscription before requesting image attributes")
-    if "image_card_sized_url(ctx->source_url, width, height)" not in text:
-        errors.append(f"{rel}: request display-sized Home Assistant image card downloads")
+    if "image_card_high_quality_request_size(width, height" not in text:
+        errors.append(f"{rel}: request high-quality Home Assistant image card source downloads")
+    if "image_card_sized_url(ctx->source_url, request_width, request_height)" not in text:
+        errors.append(f"{rel}: request bounded Home Assistant image card proxy downloads")
     if '"/api/camera_proxy/"' not in text or '"/api/image_proxy/"' not in text:
         errors.append(f"{rel}: recognize Home Assistant camera and image proxy URLs")
 
@@ -2228,9 +2230,11 @@ def run_self_test() -> int:
         "                                         int *target_width, int *target_height) {}\n"
         "inline void image_card_request_source_url(ImageCardCtx *ctx) {\n"
         "  ctx->image->set_target_size(width, height);\n"
+        "  image_card_high_quality_request_size(width, height, &request_width, &request_height);\n"
+        "  ctx->url = image_card_cache_bust_url(image_card_sized_url(ctx->source_url, request_width, request_height));\n"
         "}\n"
         "inline void image_card_request_modal_source_url(ImageCardCtx *ctx) {\n"
-        "  ctx->modal_image->request_update_url(ctx->modal_url);\n"
+        "  ctx->modal_image->request_update_url(ctx->modal_url, max_source_dim);\n"
         "}\n"
         "inline void image_card_open_modal(ImageCardCtx *ctx) {\n"
         "  lv_obj_set_style_clip_corner(ui.panel, true, LV_PART_MAIN);\n"
@@ -2268,7 +2272,8 @@ def run_self_test() -> int:
             "retry image-card startup quickly after Home Assistant API connects",
             "arm image-card refresh from the Home Assistant API connection",
             "wait for Home Assistant state subscription before requesting image attributes",
-            "request display-sized Home Assistant image card downloads",
+            "request high-quality Home Assistant image card source downloads",
+            "request bounded Home Assistant image card proxy downloads",
             "recognize Home Assistant camera and image proxy URLs",
             "start image-card refresh when Home Assistant API connects",
             "refresh image cards through Home Assistant connect retries",
@@ -2285,7 +2290,8 @@ def run_self_test() -> int:
         "  if (!ha_api_state_connected()) return;\n"
         "}\n"
         "inline void image_card_request_source_url(ImageCardCtx *ctx) {\n"
-        "  ctx->url = image_card_cache_bust_url(image_card_sized_url(ctx->source_url, width, height));\n"
+        "  image_card_high_quality_request_size(width, height, &request_width, &request_height);\n"
+        "  ctx->url = image_card_cache_bust_url(image_card_sized_url(ctx->source_url, request_width, request_height));\n"
         "}\n"
         "inline void refresh_image_cards() {\n"
         "  if (!ha_api_connected()) return;\n"

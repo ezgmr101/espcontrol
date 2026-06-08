@@ -72,7 +72,7 @@ class ArtworkImage : public PollingComponent,
     }
   }
   /** Set the URL and start an update, returning the effective URL after any downloader rewrite. */
-  std::string request_update_url(const std::string &url);
+  std::string request_update_url(const std::string &url, int max_source_dim = 0);
   /** Stop any in-flight download/decode while keeping the last completed image buffer available. */
   void cancel_update();
   const std::string &get_url() const { return this->url_; }

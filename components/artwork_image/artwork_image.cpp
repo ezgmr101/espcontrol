@@ -235,8 +235,8 @@ size_t ArtworkImage::resize_(int width_in, int height_in) {
   return new_size;
 }
 
-std::string ArtworkImage::request_update_url(const std::string &url) {
-  int max_dim = this->fixed_width_ > 0 ? this->fixed_width_ : 600;
+std::string ArtworkImage::request_update_url(const std::string &url, int max_source_dim) {
+  int max_dim = max_source_dim > 0 ? max_source_dim : (this->fixed_width_ > 0 ? this->fixed_width_ : 600);
   std::string effective_url = cap_artwork_url(url, max_dim);
   if (effective_url != url) {
     ESP_LOGI(TAG, "Rewrote artwork URL to a capped JPEG (%dpx)", max_dim);

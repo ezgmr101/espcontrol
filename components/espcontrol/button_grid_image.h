@@ -462,6 +462,18 @@ inline void image_card_limit_target_size(lv_coord_t source_width, lv_coord_t sou
   if (target_height) *target_height = height;
 }
 
+inline void image_card_high_quality_request_size(lv_coord_t target_width, lv_coord_t target_height,
+                                                 int *request_width, int *request_height) {
+  int width = target_width > 0 ? static_cast<int>(target_width) : 1;
+  int height = target_height > 0 ? static_cast<int>(target_height) : 1;
+  int long_side = width > height ? width : height;
+  if (long_side > 0 && long_side < IMAGE_CARD_MODAL_MAX_TARGET_SIDE_PX) {
+    width = std::max(1, width * IMAGE_CARD_MODAL_MAX_TARGET_SIDE_PX / long_side);
+    height = std::max(1, height * IMAGE_CARD_MODAL_MAX_TARGET_SIDE_PX / long_side);
+  }
+  image_card_limit_target_size(width, height, request_width, request_height);
+}
+
 inline void image_card_apply_active_geometry(ImageCardCtx *ctx) {
   if (!ctx || !ctx->image) return;
   if (image_card_modal_active_for(ctx) && image_card_apply_modal_geometry(ctx, ctx->image)) return;
@@ -711,14 +723,19 @@ inline void image_card_request_source_url(ImageCardCtx *ctx) {
     }
     return;
   }
-  ctx->url = image_card_cache_bust_url(image_card_sized_url(ctx->source_url, width, height));
+  int request_width = 0;
+  int request_height = 0;
+  image_card_high_quality_request_size(width, height, &request_width, &request_height);
+  ctx->url = image_card_cache_bust_url(
+    image_card_sized_url(ctx->source_url, request_width, request_height));
   ctx->requested_once = true;
   ctx->next_download_retry_ms = 0;
   image_card_schedule_next_refresh(ctx, now);
   ctx->image->set_target_size(width, height);
   ctx->image->set_resize_mode(resize_mode);
   ESP_LOGI("image_card", "Downloading camera image for %s", ctx->entity_id.c_str());
-  std::string effective_url = ctx->image->request_update_url(ctx->url);
+  int max_source_dim = request_width > request_height ? request_width : request_height;
+  std::string effective_url = ctx->image->request_update_url(ctx->url, max_source_dim);
   if (!effective_url.empty()) {
     ctx->url = effective_url;
   }
@@ -749,7 +766,8 @@ inline bool image_card_request_modal_source_url(ImageCardCtx *ctx) {
     ctx->modal_fit ? esphome::artwork_image::ImageResizeMode::FIT
                    : esphome::artwork_image::ImageResizeMode::COVER);
   ESP_LOGI("image_card", "Downloading modal camera image for %s", ctx->entity_id.c_str());
-  std::string effective_url = ctx->modal_image->request_update_url(ctx->modal_url);
+  int max_source_dim = width > height ? width : height;
+  std::string effective_url = ctx->modal_image->request_update_url(ctx->modal_url, max_source_dim);
   if (!effective_url.empty()) {
     ctx->modal_url = effective_url;
   }
