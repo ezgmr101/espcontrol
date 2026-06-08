@@ -152,6 +152,15 @@ int main() {
   assert(image_label.label == "Front Door");
   assert(image_label.options == "image_label");
   assert(image_card_label_enabled(image_label));
+  auto image_icon = parse_cfg("camera.front_door;;Auto;Auto;;;image;;image_icon");
+  assert(image_icon.type == "image");
+  assert(image_icon.options == "image_icon");
+  assert(image_card_icon_enabled(image_icon));
+  auto image_label_icon = parse_cfg("camera.front_door;Front Door;Auto;Auto;;;image;;image_label,image_icon");
+  assert(image_label_icon.label == "Front Door");
+  assert(image_label_icon.options == "image_label,image_icon");
+  assert(image_card_label_enabled(image_label_icon));
+  assert(image_card_icon_enabled(image_label_icon));
   auto image_label_refresh = parse_cfg("~camera.front_door,Front%20Door,Auto,Auto,,,image,,image_label%2Cimage_refresh=30%2Cimage_refresh_mode=timer");
   assert(image_label_refresh.label == "Front Door");
   assert(image_label_refresh.options == "image_label,image_refresh=30,image_refresh_mode=timer");

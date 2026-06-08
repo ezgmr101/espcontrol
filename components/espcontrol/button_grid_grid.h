@@ -610,6 +610,9 @@ inline void refresh_card_layout(BtnSlot &s, const ParsedCfg &p,
     if (s.text_lbl && !lv_obj_has_flag(s.text_lbl, LV_OBJ_FLAG_HIDDEN)) {
       image_card_align_label_stack(s.text_lbl, s.btn);
     }
+    if (s.icon_lbl && !lv_obj_has_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN)) {
+      image_card_align_icon(s.icon_lbl, s.btn);
+    }
   } else if (p.type == "media") {
     refresh_media_card_layout(s, p, cfg, row_span);
   } else if (brightness_slider_type(p.type) || p.type == "light_temperature" ||

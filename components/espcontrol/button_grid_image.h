@@ -586,6 +586,14 @@ inline void image_card_align_label_stack(lv_obj_t *label, lv_obj_t *btn) {
   image_card_align_label(label, btn);
 }
 
+inline void image_card_align_icon(lv_obj_t *icon, lv_obj_t *btn) {
+  if (!icon || !btn) return;
+  lv_coord_t pad_left = lv_obj_get_style_pad_left(btn, LV_PART_MAIN);
+  lv_coord_t pad_top = lv_obj_get_style_pad_top(btn, LV_PART_MAIN);
+  lv_obj_align(icon, LV_ALIGN_TOP_LEFT, pad_left, pad_top);
+  lv_obj_move_foreground(icon);
+}
+
 inline bool image_card_entity_supported(const std::string &entity_id) {
   return entity_id.rfind("camera.", 0) == 0 || entity_id.rfind("image.", 0) == 0;
 }
@@ -640,6 +648,17 @@ inline void image_card_configure_label(BtnSlot &s, const ParsedCfg &p) {
   if (p.label.empty() && !p.entity.empty()) {
     subscribe_image_card_label(s.text_lbl, s.btn, p.entity);
   }
+}
+
+inline void image_card_configure_icon(BtnSlot &s, const ParsedCfg &p) {
+  if (!s.icon_lbl) return;
+  if (!image_card_icon_enabled(p)) {
+    lv_obj_add_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+    return;
+  }
+  lv_label_set_text(s.icon_lbl, find_icon("Camera"));
+  lv_obj_clear_flag(s.icon_lbl, LV_OBJ_FLAG_HIDDEN);
+  image_card_align_icon(s.icon_lbl, s.btn);
 }
 
 inline std::string image_card_join_url(const std::string &base, const std::string &path) {
@@ -999,6 +1018,7 @@ inline bool bind_image_card(BtnSlot &s, const ParsedCfg &p, const GridConfig &cf
     return true;
   }
   image_card_configure_label(s, p);
+  image_card_configure_icon(s, p);
   ImageCardCtx *ctx = acquire_image_card_context(cfg);
   if (!ctx) {
     ESP_LOGW("image_card", "No image card downloader available for %s", p.entity.c_str());

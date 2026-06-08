@@ -77,6 +77,7 @@ constexpr const char *SENSOR_STATE_OUTPUT_2_OPTION = "state_output_2";
 constexpr const char *SENSOR_STATE_LOW_LABEL_OPTION = "state_low_label";
 constexpr const char *SENSOR_STATE_HIGH_LABEL_OPTION = "state_high_label";
 constexpr const char *IMAGE_LABEL_OPTION = "image_label";
+constexpr const char *IMAGE_ICON_OPTION = "image_icon";
 constexpr const char *IMAGE_MODAL_MODE_OPTION = "image_modal_mode";
 constexpr const char *IMAGE_REFRESH_OPTION = "image_refresh";
 constexpr const char *IMAGE_REFRESH_MODE_OPTION = "image_refresh_mode";
@@ -291,6 +292,10 @@ inline std::string image_card_options_normalized(const std::string &options) {
   if (cfg_option_token_present(options, IMAGE_LABEL_OPTION)) {
     out = IMAGE_LABEL_OPTION;
   }
+  if (cfg_option_token_present(options, IMAGE_ICON_OPTION)) {
+    if (!out.empty()) out += ",";
+    out += IMAGE_ICON_OPTION;
+  }
   std::string modal_mode = normalize_image_modal_mode(
     cfg_option_value(options, IMAGE_MODAL_MODE_OPTION));
   if (modal_mode != "fill") {
@@ -328,6 +333,10 @@ inline bool image_card_timer_only_refresh(const ParsedCfg &p) {
 
 inline bool image_card_label_enabled(const ParsedCfg &p) {
   return cfg_option_token_present(p.options, IMAGE_LABEL_OPTION);
+}
+
+inline bool image_card_icon_enabled(const ParsedCfg &p) {
+  return cfg_option_token_present(p.options, IMAGE_ICON_OPTION);
 }
 
 inline bool image_card_modal_fit_enabled(const ParsedCfg &p) {

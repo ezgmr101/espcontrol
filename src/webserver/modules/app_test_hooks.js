@@ -85,6 +85,7 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     imageModalModeValues: imageModalModeValues,
     normalizeImageOptions: normalizeImageOptions,
     imageLabelEnabled: imageLabelEnabled,
+    imageIconEnabled: imageIconEnabled,
     imageModalMode: imageModalMode,
     imageRefreshInterval: imageRefreshInterval,
     imageRefreshMode: imageRefreshMode,

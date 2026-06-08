@@ -1149,6 +1149,11 @@ var CARD_CONTRACT_CARDS = {
         "kind": "flag"
       },
       {
+        "name": "image_icon",
+        "label": "Show Icon",
+        "kind": "flag"
+      },
+      {
         "name": "image_modal_mode",
         "label": "Expanded Image",
         "kind": "choice",

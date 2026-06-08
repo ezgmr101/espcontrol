@@ -36,12 +36,19 @@ function imageModalModeOptions() {
 }
 
 function renderImageLabelSettings(panel, b, helpers) {
-  var toggle = helpers.toggleRow(
+  var labelToggle = helpers.toggleRow(
     "Show Label",
     helpers.idPrefix + "image-label-toggle",
     imageLabelEnabled(b)
   );
-  panel.appendChild(toggle.row);
+  panel.appendChild(labelToggle.row);
+
+  var iconToggle = helpers.toggleRow(
+    "Show Icon",
+    helpers.idPrefix + "image-icon-toggle",
+    imageIconEnabled(b)
+  );
+  panel.appendChild(iconToggle.row);
 
   var labelField = helpers.renderCardTextField(panel, b, helpers, {
       text: {
@@ -57,11 +64,16 @@ function renderImageLabelSettings(panel, b, helpers) {
     labelField.field.hidden = !imageLabelEnabled(b);
   }
 
-  toggle.input.addEventListener("change", function () {
+  labelToggle.input.addEventListener("change", function () {
     setImageLabelEnabled(b, this.checked);
     helpers.saveField("options", b.options);
     helpers.saveField("label", b.label);
     syncLabelField();
+    renderPreview();
+  });
+  iconToggle.input.addEventListener("change", function () {
+    setImageIconEnabled(b, this.checked);
+    helpers.saveField("options", b.options);
     renderPreview();
   });
   syncLabelField();
@@ -149,11 +161,12 @@ registerButtonType("image", {
   renderPreview: function (b, helpers) {
     var tertiaryColor = (typeof state !== "undefined" && state.sensorColor) ? state.sensorColor : "212121";
     var label = imageLabelEnabled(b) ? String((b && b.label) || "Camera").trim() : "";
+    var icon = imageIconEnabled(b) ? '<span class="sp-image-preview-icon mdi mdi-camera"></span>' : "";
     return {
       buttonClass: "sp-image-card",
       iconHtml:
         '<span class="sp-image-preview" style="background:#' + helpers.escHtml(tertiaryColor) + '">' +
-        '<span class="sp-image-preview-icon mdi mdi-image"></span>' +
+        icon +
         '</span>',
       labelHtml: label
         ? '<span class="sp-image-label"><span class="sp-image-label-stack">' +

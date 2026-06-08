@@ -1678,6 +1678,28 @@ assertButtonRoundTrip(hooks, "image card label and refresh options", {
   precision: "",
   options: "image_label,image_refresh=30,image_refresh_mode=timer",
 }, false);
+assertButtonRoundTrip(hooks, "image card icon option", {
+  entity: "camera.front_door",
+  label: "",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "image",
+  precision: "",
+  options: "image_icon",
+}, false);
+assertButtonRoundTrip(hooks, "image card label and icon options", {
+  entity: "camera.front_door",
+  label: "Front Door",
+  icon: "Auto",
+  icon_on: "Auto",
+  sensor: "",
+  unit: "",
+  type: "image",
+  precision: "",
+  options: "image_label,image_icon",
+}, false);
 assertButtonMigration(hooks, "image card clears label without overlay option", "camera.front_door;Front Door;Auto;Auto;;;image;;", {
   entity: "camera.front_door",
   label: "",

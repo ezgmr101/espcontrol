@@ -201,6 +201,7 @@ var CLIMATE_NUMBER_DISPLAY_OPTION = "number_display";
 var MEDIA_VOLUME_MAX_OPTION = "volume_max";
 var SUBPAGE_KIND_OPTION = "subpage_kind";
 var IMAGE_LABEL_OPTION = "image_label";
+var IMAGE_ICON_OPTION = "image_icon";
 var IMAGE_MODAL_MODE_OPTION = "image_modal_mode";
 var IMAGE_REFRESH_OPTION = "image_refresh";
 var IMAGE_REFRESH_MODE_OPTION = "image_refresh_mode";
@@ -469,10 +470,17 @@ function imageLabelEnabled(b) {
   return !!(b && configOptionEnabled(b.options, IMAGE_LABEL_OPTION));
 }
 
+function imageIconEnabled(b) {
+  return !!(b && configOptionEnabled(b.options, IMAGE_ICON_OPTION));
+}
+
 function normalizeImageOptions(options) {
   var out = "";
   if (configOptionEnabled(options, IMAGE_LABEL_OPTION)) {
     out = setConfigOption(out, IMAGE_LABEL_OPTION, true);
+  }
+  if (configOptionEnabled(options, IMAGE_ICON_OPTION)) {
+    out = setConfigOption(out, IMAGE_ICON_OPTION, true);
   }
   var modalMode = normalizeImageModalMode(configOptionValue(options, IMAGE_MODAL_MODE_OPTION));
   if (modalMode !== "fill") {
@@ -492,6 +500,13 @@ function setImageLabelEnabled(b, enabled) {
   if (!b) return "";
   b.options = setConfigOption(b.options, IMAGE_LABEL_OPTION, !!enabled);
   if (!enabled) b.label = "";
+  b.options = normalizeImageOptions(b.options);
+  return b.options;
+}
+
+function setImageIconEnabled(b, enabled) {
+  if (!b) return "";
+  b.options = setConfigOption(b.options, IMAGE_ICON_OPTION, !!enabled);
   b.options = normalizeImageOptions(b.options);
   return b.options;
 }
