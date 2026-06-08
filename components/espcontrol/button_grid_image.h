@@ -9,7 +9,6 @@ constexpr uint32_t IMAGE_CARD_STARTUP_RETRY_MS = 45000;
 constexpr uint32_t IMAGE_CARD_RETRY_INTERVAL_MS = 2000;
 constexpr uint8_t IMAGE_CARD_STARTUP_DOWNLOAD_RETRIES = 10;
 constexpr const char *IMAGE_CARD_LOADING_ICON = "\U000F02E9";
-constexpr const char *IMAGE_CARD_UNAVAILABLE_ICON = "\U000F02ED";
 
 struct ImageCardCtx {
   lv_obj_t *widget = nullptr;
@@ -102,11 +101,7 @@ inline lv_obj_t *image_card_loading_label(lv_obj_t *loading_widget) {
 inline void image_card_set_loading_state(lv_obj_t *loading_widget, const char *text) {
   if (!loading_widget) return;
   lv_obj_t *icon = image_card_loading_icon(loading_widget);
-  if (icon) {
-    lv_label_set_text(icon, text && std::strcmp(text, "Unavailable") == 0
-      ? IMAGE_CARD_UNAVAILABLE_ICON
-      : IMAGE_CARD_LOADING_ICON);
-  }
+  if (icon) lv_label_set_text(icon, IMAGE_CARD_LOADING_ICON);
   lv_obj_t *label = image_card_loading_label(loading_widget);
   if (label) lv_label_set_text(label, espcontrol_i18n(text));
   lv_obj_clear_flag(loading_widget, LV_OBJ_FLAG_HIDDEN);
@@ -337,7 +332,7 @@ inline void setup_image_card(BtnSlot &s) {
   lv_obj_set_style_border_width(loading, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(loading, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(loading, 0, LV_PART_MAIN);
-  lv_obj_set_style_pad_row(loading, 8, LV_PART_MAIN);
+  lv_obj_set_style_pad_row(loading, 16, LV_PART_MAIN);
   lv_obj_set_style_flex_flow(loading, LV_FLEX_FLOW_COLUMN, LV_PART_MAIN);
   lv_obj_set_style_flex_main_place(loading, LV_FLEX_ALIGN_CENTER, LV_PART_MAIN);
   lv_obj_set_style_flex_cross_place(loading, LV_FLEX_ALIGN_CENTER, LV_PART_MAIN);
