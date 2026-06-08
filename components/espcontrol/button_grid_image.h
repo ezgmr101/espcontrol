@@ -532,8 +532,14 @@ inline void image_card_align_label(lv_obj_t *label, lv_obj_t *btn) {
   lv_obj_update_layout(btn);
   lv_coord_t width = lv_obj_get_width(btn);
   lv_coord_t pad_left = lv_obj_get_style_pad_left(btn, LV_PART_MAIN);
+  lv_coord_t pad_right = lv_obj_get_style_pad_right(btn, LV_PART_MAIN);
+  lv_coord_t pad_top = lv_obj_get_style_pad_top(btn, LV_PART_MAIN);
   lv_coord_t pad_bottom = lv_obj_get_style_pad_bottom(btn, LV_PART_MAIN);
   if (width > 0) lv_obj_set_width(label, width);
+  lv_obj_set_style_pad_left(label, pad_left, LV_PART_MAIN);
+  lv_obj_set_style_pad_right(label, pad_right, LV_PART_MAIN);
+  lv_obj_set_style_pad_top(label, pad_top / 2, LV_PART_MAIN);
+  lv_obj_set_style_pad_bottom(label, pad_bottom, LV_PART_MAIN);
   lv_obj_align(label, LV_ALIGN_BOTTOM_LEFT, -pad_left, pad_bottom);
   lv_obj_move_foreground(label);
 }
@@ -563,12 +569,7 @@ inline void image_card_configure_label(BtnSlot &s, const ParsedCfg &p) {
   lv_obj_set_style_bg_color(s.text_lbl, lv_color_hex(DARK_OVERLAY), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(s.text_lbl, LV_OPA_50, LV_PART_MAIN);
   lv_obj_set_style_radius(s.text_lbl, 0, LV_PART_MAIN);
-  lv_obj_set_style_pad_left(s.text_lbl, 6, LV_PART_MAIN);
-  lv_obj_set_style_pad_right(s.text_lbl, 6, LV_PART_MAIN);
-  lv_obj_set_style_pad_top(s.text_lbl, 4, LV_PART_MAIN);
-  lv_obj_set_style_pad_bottom(s.text_lbl, 4, LV_PART_MAIN);
   lv_label_set_long_mode(s.text_lbl, LV_LABEL_LONG_WRAP);
-  lv_obj_set_width(s.text_lbl, lv_pct(92));
   lv_label_set_text(s.text_lbl, (p.label.empty() ? p.entity : p.label).c_str());
   image_card_align_label(s.text_lbl, s.btn);
   if (p.label.empty() && !p.entity.empty()) {
