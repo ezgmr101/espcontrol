@@ -440,7 +440,9 @@ async function assertEmptyCellSettings(page, posts, label) {
   await page.waitForSelector(".sp-settings-overlay.sp-visible");
   await page.waitForTimeout(100);
   assert.strictEqual(posts.length, before, `${label}: opening a new card draft should not post immediately`);
-  assert(await page.locator("#sp-inp-type").isVisible(), `${label}: new card draft shows the card type picker`);
+  assert(await page.locator("#sp-card-type-picker").isVisible(), `${label}: new card draft shows the card type grid`);
+  assert(await page.locator(".sp-card-type-option").filter({ hasText: "Switch" }).first().isVisible(), `${label}: new card draft shows Switch as a card type`);
+  assert.strictEqual(await page.locator("#sp-inp-type").count(), 0, `${label}: new card draft does not show the compact type dropdown before selection`);
   assert.strictEqual(await page.locator(".sp-settings-modal .sp-save-btn").count(), 0, `${label}: new card draft hides Save until a type is selected`);
   assert.strictEqual(await page.locator(".sp-settings-modal .sp-delete-btn").count(), 0, `${label}: new card draft hides Delete before save`);
   const modalLayout = await page.evaluate(() => {
@@ -474,7 +476,7 @@ async function assertEmptyCellSettings(page, posts, label) {
 
   await page.locator(`.sp-main [data-pos="${pos}"]`).click();
   await page.waitForSelector(".sp-settings-overlay.sp-visible");
-  await page.locator("#sp-inp-type").selectOption({ label: "Switch" });
+  await page.getByRole("button", { name: "Switch card type" }).click();
   await page.locator("#sp-inp-entity").waitFor({ state: "visible" });
   assert(await page.locator(".sp-settings-modal .sp-save-btn").isVisible(), `${label}: selecting a card type shows Save`);
   assert.strictEqual(await page.locator(".sp-settings-modal .sp-delete-btn").count(), 0, `${label}: unsaved new card keeps Delete hidden after type selection`);
@@ -489,7 +491,7 @@ async function assertEmptyCellSettings(page, posts, label) {
 
   await page.locator(`.sp-main [data-pos="${pos}"]`).click();
   await page.waitForSelector(".sp-settings-overlay.sp-visible");
-  await page.locator("#sp-inp-type").selectOption({ label: "Switch" });
+  await page.getByRole("button", { name: "Switch card type" }).click();
   await page.locator("#sp-inp-label").fill("New Card");
   await page.locator("#sp-inp-entity").fill("switch.new_card");
   await page.getByRole("button", { name: "Save" }).click();

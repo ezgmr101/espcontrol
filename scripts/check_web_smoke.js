@@ -206,6 +206,18 @@ assert(infoOnlyPickerKeys.includes("weather"), "info-only displays can still add
 assert(!infoOnlyPickerKeys.includes(""), "info-only displays hide switch controls");
 assert(!infoOnlyPickerKeys.includes("subpage"), "info-only displays hide subpage cards");
 assert(!infoOnlyPickerKeys.includes("media"), "info-only displays hide media controls");
+const pickerOptions = Array.from(hooks.buttonTypePickerOptionsFor(false, null));
+assert(pickerOptions.length > 8, "main card picker exposes the visible card choices");
+for (const option of pickerOptions) {
+  assert.strictEqual(typeof option.icon, "string", `${option.key}: picker option has an icon`);
+  assert(option.icon.length > 0, `${option.key}: picker option icon is not empty`);
+  assert.strictEqual(typeof option.description, "string", `${option.key}: picker option has a description`);
+  assert(option.description.length > 0, `${option.key}: picker option description is not empty`);
+}
+const switchPickerOption = pickerOptions.find((option) => option.key === "");
+assert(switchPickerOption, "switch card appears in the main card picker");
+assert.strictEqual(switchPickerOption.icon, "toggle-switch", "switch picker option uses the expected icon");
+assert(/Toggle lights/.test(switchPickerOption.description), "switch picker option includes concise help text");
 assert(
   hooks.buttonTypePreviewFor("alarm", { label: "Alarm", icon: "Security", type: "alarm" }).iconHtml.includes("mdi-shield-off"),
   "alarm preview defaults to the status icon"

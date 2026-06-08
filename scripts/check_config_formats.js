@@ -1570,6 +1570,9 @@ assertButtonMigration(hooks, "fan card clears ignored fields", "fan.bedroom;Bedr
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", false, false), false, "fan picker hidden without experimental flag");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", true, false), true, "fan picker visible with experimental flag");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", true, true), true, "fan picker visible in subpages with experimental flag");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("image", false, false), false, "image picker hidden without experimental flag");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("image", true, false), true, "image picker visible with experimental flag");
+assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("image", true, true), true, "image picker visible in subpages with experimental flag");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_switch", true, false), false, "fan subtype hidden from top-level picker");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_switch", true, true), false, "fan switch subtype hidden from subpage picker");
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_oscillate", true, true), false, "fan oscillation subtype hidden from subpage picker");

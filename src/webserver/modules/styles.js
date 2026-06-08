@@ -221,6 +221,7 @@ var CSS =
   ".sp-settings-modal{position:relative;background:var(--bg);border:1px solid var(--border);" +
   "border-radius:var(--radius);width:90%;max-width:420px;max-height:80vh;" +
   "overflow-y:auto;box-shadow:var(--shadow-3);margin:40px;scrollbar-color:#fff transparent}" +
+  ".sp-settings-modal.sp-card-type-picker-open{max-width:720px}" +
   ".sp-settings-modal::-webkit-scrollbar{width:10px}" +
   ".sp-settings-modal::-webkit-scrollbar-track{background:transparent}" +
   ".sp-settings-modal::-webkit-scrollbar-thumb{background:#fff;border-radius:999px}" +
@@ -235,6 +236,19 @@ var CSS =
   ".sp-settings-modal .sp-section-title{font-size:1.05rem;color:var(--text);" +
   "margin:0 0 20px;letter-spacing:-.01em}" +
   ".sp-settings-modal .sp-panel{background:none;border:none;padding:0;margin:0}" +
+  ".sp-card-type-picker-field{margin-bottom:0}" +
+  ".sp-card-type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}" +
+  ".sp-card-type-option{min-width:0;min-height:112px;display:flex;align-items:flex-start;gap:13px;" +
+  "padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);" +
+  "color:var(--text);font-family:inherit;text-align:left;cursor:pointer;transition:background .2s,border-color .2s,box-shadow .2s,transform .2s}" +
+  ".sp-card-type-option:hover{background:var(--surface2);border-color:#4a4d54;transform:translateY(-1px)}" +
+  ".sp-card-type-option:focus-visible{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}" +
+  ".sp-card-type-option:disabled{opacity:.48;cursor:not-allowed;transform:none}" +
+  ".sp-card-type-icon{width:34px;height:34px;border-radius:8px;background:var(--accent-soft);" +
+  "color:var(--accent-hover);display:inline-flex;align-items:center;justify-content:center;font-size:22px;line-height:1;flex:0 0 auto}" +
+  ".sp-card-type-copy{display:grid;gap:6px;min-width:0}" +
+  ".sp-card-type-title{font-size:.93rem;font-weight:600;line-height:1.25;color:var(--text);overflow-wrap:anywhere}" +
+  ".sp-card-type-description{font-size:.78rem;line-height:1.35;color:var(--text2);overflow-wrap:anywhere}" +
 
   ".card{background:var(--surface);border:1px solid var(--border);" +
   "border-radius:var(--radius);padding:24px;margin-bottom:var(--gap);transition:border-color .2s}" +

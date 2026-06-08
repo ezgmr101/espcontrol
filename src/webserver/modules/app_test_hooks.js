@@ -126,6 +126,9 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
       CFG.infoOnly = oldInfoOnly;
       return keys;
     },
+    buttonTypePickerOptionsFor: function (isSub, selectedTypeKey) {
+      return buttonTypePickerOptionList(!!isSub, selectedTypeKey == null ? null : selectedTypeKey);
+    },
     buttonTypesMissingCardMetadata: function () {
       var missing = [];
       for (var key in BUTTON_TYPES) {

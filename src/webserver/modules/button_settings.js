@@ -435,6 +435,8 @@ function renderBackButtonSettings(container, c) {
 function renderButtonSettings(forceOpen) {
   var container = els.buttonSettings;
   container.innerHTML = "";
+  var settingsModal = els.settingsOverlay ? els.settingsOverlay.querySelector(".sp-settings-modal") : null;
+  if (settingsModal) settingsModal.classList.remove("sp-card-type-picker-open");
   var c = ctx();
 
   if (isConfigLocked()) {
@@ -775,6 +777,49 @@ function renderButtonSettings(forceOpen) {
     ], value || "0", onChange);
   }
 
+  function selectCardType(newType) {
+    if (newType === "__choose-card-type__") return;
+    b.type = newType;
+    if (state.settingsDraft && state.settingsDraft.key === draftKey) {
+      state.settingsDraft.typeSelected = true;
+    }
+    var td = BUTTON_TYPES[newType];
+    if (td && td.onSelect) td.onSelect(b);
+    saveField("type", newType);
+    renderButtonSettings();
+  }
+
+  function renderCardTypeGrid(options) {
+    var field = document.createElement("div");
+    field.className = "sp-field sp-card-type-picker-field";
+    field.appendChild(fieldLabel("Card", "sp-card-type-picker"));
+    var grid = document.createElement("div");
+    grid.className = "sp-card-type-grid";
+    grid.id = "sp-card-type-picker";
+    grid.setAttribute("role", "list");
+    (options || []).forEach(function (o) {
+      var item = document.createElement("button");
+      item.type = "button";
+      item.className = "sp-card-type-option";
+      item.disabled = !!o.disabled;
+      item.setAttribute("data-card-type", o.key);
+      item.setAttribute("aria-label", o.label + " card type");
+      item.innerHTML =
+        '<span class="sp-card-type-icon mdi mdi-' + escAttr(o.icon || "card-outline") + '"></span>' +
+        '<span class="sp-card-type-copy">' +
+        '<span class="sp-card-type-title">' + escHtml(o.label) + '</span>' +
+        '<span class="sp-card-type-description">' + escHtml(o.description || "") + '</span>' +
+        '</span>';
+      item.addEventListener("click", function () {
+        if (item.disabled) return;
+        selectCardType(o.key);
+      });
+      grid.appendChild(item);
+    });
+    field.appendChild(grid);
+    return field;
+  }
+
   var isNewDraftWithoutType = isNewDraft && !state.settingsDraft.typeSelected;
   var rawTypeDef = isNewDraftWithoutType ? null : (BUTTON_TYPES[b.type || ""] || BUTTON_TYPES[""]);
   var typeDef = rawTypeDef;
@@ -811,23 +856,16 @@ function renderButtonSettings(forceOpen) {
       typeSelect.appendChild(opt);
     });
     typeSelect.addEventListener("change", function () {
-      var newType = this.value;
-      if (newType === chooseTypeValue) return;
-      b.type = newType;
-      if (state.settingsDraft && state.settingsDraft.key === draftKey) {
-        state.settingsDraft.typeSelected = true;
-      }
-      var td = BUTTON_TYPES[newType];
-      if (td && td.onSelect) td.onSelect(b);
-      saveField("type", newType);
-      renderButtonSettings();
+      selectCardType(this.value);
     });
-    tf.appendChild(typeSelect);
-    panel.appendChild(tf);
     if (isNewDraftWithoutType) {
+      if (settingsModal) settingsModal.classList.add("sp-card-type-picker-open");
+      panel.appendChild(renderCardTypeGrid(typeOpts));
       container.appendChild(panel);
       return;
     }
+    tf.appendChild(typeSelect);
+    panel.appendChild(tf);
   }
 
   var typeHelpers = {
