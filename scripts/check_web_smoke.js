@@ -90,10 +90,25 @@ assert.deepStrictEqual(Array.from(hooks.SSE_ALIAS_GROUPS.coverArtHideExternalInp
   "switch-screen_saver_hide_cover_art_on_external_input",
   "switch-hide_cover_art_on_external_input",
   "switch-cover_art_hide_external_input",
+  "switch-screen_saver__hide_for_external_sources",
 ], "cover art external-input SSE aliases are registered together");
+assert.deepStrictEqual(Array.from(hooks.SSE_ALIAS_GROUPS.trackOverlayDuration), [
+  "number-screen_saver__track_overlay_duration",
+  "number-screen_saver_track_overlay_duration",
+  "number-track_overlay_duration",
+  "number-screen_saver__show_track_overlay",
+], "cover art track-overlay SSE aliases are registered together");
 assert(
   Array.from(hooks.entityLookupNames("screen_saver_hide_cover_art_external_input")).includes("screen_saver__hide_cover_art_on_external_input"),
   "cover art external-input post aliases include the full generated object id"
+);
+assert(
+  Array.from(hooks.entityLookupNames("screen_saver_hide_cover_art_external_input")).includes("screen_saver__hide_for_external_sources"),
+  "cover art external-input post aliases include the legacy external-sources object id"
+);
+assert(
+  Array.from(hooks.entityLookupNames("screen_saver_track_overlay_duration")).includes("screen_saver__show_track_overlay"),
+  "cover art track-overlay post aliases include the legacy show-track-overlay object id"
 );
 assert.strictEqual(hooks.clockBarVisibleInPreviewFor(true, "off"), true, "clock bar preview is visible when enabled");
 assert.strictEqual(hooks.clockBarVisibleInPreviewFor(true, "dim"), true, "clock bar preview stays visible for dimmed screen saver");

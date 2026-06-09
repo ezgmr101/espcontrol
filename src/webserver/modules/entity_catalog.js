@@ -219,7 +219,8 @@ var ENTITY_CATALOG = {
       "objectIds": [
         "screen_saver__track_overlay_duration",
         "screen_saver_track_overlay_duration",
-        "track_overlay_duration"
+        "track_overlay_duration",
+        "screen_saver__show_track_overlay"
       ]
     },
     "screen_saver_hide_cover_art_external_input": {
@@ -229,7 +230,8 @@ var ENTITY_CATALOG = {
         "screen_saver__hide_cover_art_on_external_input",
         "screen_saver_hide_cover_art_on_external_input",
         "hide_cover_art_on_external_input",
-        "cover_art_hide_external_input"
+        "cover_art_hide_external_input",
+        "screen_saver__hide_for_external_sources"
       ]
     },
     "screen_saver_daytime_clock_brightness": {
