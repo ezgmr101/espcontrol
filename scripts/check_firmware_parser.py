@@ -91,6 +91,7 @@ inline void lv_label_set_long_mode(lv_obj_t *, int) {}
 inline void lv_obj_set_width(lv_obj_t *, int) {}
 inline void lv_obj_set_height(lv_obj_t *, int) {}
 inline void lv_obj_set_grid_cell(lv_obj_t *, int, int, int, int, int, int) {}
+inline void lv_obj_update_layout(lv_obj_t *) {}
 inline void lv_label_set_text(lv_obj_t *, const char *) {}
 inline void lv_obj_align(lv_obj_t *, int, int, int) {}
 inline void lv_obj_move_foreground(lv_obj_t *) {}
