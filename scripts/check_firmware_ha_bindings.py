@@ -692,6 +692,15 @@ def firmware_image_card_quality_errors(firmware_dir: Path, root: Path) -> list[s
         errors.append(f"{rel}: preserve image card rounded corners while pressed")
     if "image_card_pressed_selector" not in text:
         errors.append(f"{rel}: apply image card corner clipping to the pressed state")
+    if "image_card_refresh_tile_geometry" not in text or "resized tile" not in text:
+        errors.append(f"{rel}: refresh image-card downloads when card size changes")
+
+    grid_path = firmware_dir / "button_grid_grid.h"
+    if grid_path.exists():
+        grid_rel = grid_path.relative_to(root)
+        grid_text = grid_path.read_text(encoding="utf-8")
+        if "image_card_refresh_tile_geometry(ctx)" not in grid_text:
+            errors.append(f"{grid_rel}: update active image-card geometry during grid refresh")
     return errors
 
 
@@ -2232,6 +2241,9 @@ def run_self_test() -> int:
         "  ctx->image->set_target_size(width, height);\n"
         "  image_card_high_quality_request_size(width, height, &request_width, &request_height);\n"
         "  ctx->url = image_card_cache_bust_url(image_card_sized_url(ctx->source_url, request_width, request_height));\n"
+        "}\n"
+        "inline void image_card_refresh_tile_geometry(ImageCardCtx *ctx) {\n"
+        "  image_card_schedule_source_refresh(ctx, 1, \"resized tile\");\n"
         "}\n"
         "inline void image_card_request_modal_source_url(ImageCardCtx *ctx) {\n"
         "  ctx->modal_image->request_update_url(ctx->modal_url, max_source_dim);\n"

@@ -88,6 +88,8 @@ inline bool image_card_apply_modal_geometry(
   lv_coord_t *target_width = nullptr,
   lv_coord_t *target_height = nullptr);
 inline bool image_card_queue_modal_source_request(ImageCardCtx *ctx);
+inline void image_card_schedule_source_refresh(ImageCardCtx *ctx, uint32_t delay_ms,
+                                               const char *reason);
 
 inline uint32_t image_card_scale_for_size(lv_coord_t target_width, lv_coord_t target_height,
                                           int source_width, int source_height, bool fit) {
@@ -470,6 +472,25 @@ inline void image_card_apply_widget_geometry(lv_obj_t *btn, lv_obj_t *widget,
   image_card_refresh_loading_layout(loading);
   image->set_target_size(width, height);
   image->set_resize_mode(esphome::artwork_image::ImageResizeMode::COVER);
+}
+
+inline void image_card_refresh_tile_geometry(ImageCardCtx *ctx) {
+  if (!ctx || !ctx->image) return;
+  int previous_width = ctx->image->get_fixed_width();
+  int previous_height = ctx->image->get_fixed_height();
+  image_card_apply_widget_geometry(ctx->btn, ctx->widget, ctx->image);
+  int current_width = ctx->image->get_fixed_width();
+  int current_height = ctx->image->get_fixed_height();
+  if (current_width <= 0 || current_height <= 0 ||
+      (current_width == previous_width && current_height == previous_height) ||
+      ctx->source_url.empty()) {
+    return;
+  }
+  if (image_card_modal_active_for(ctx)) {
+    image_card_schedule_source_refresh(ctx, IMAGE_CARD_MODAL_REFRESH_DELAY_MS, "resized tile");
+  } else {
+    image_card_schedule_source_refresh(ctx, 1, "resized tile");
+  }
 }
 
 inline bool image_card_apply_modal_geometry(ImageCardCtx *ctx,

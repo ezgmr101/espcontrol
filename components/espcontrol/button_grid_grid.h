@@ -598,14 +598,21 @@ inline void refresh_card_layout(BtnSlot &s, const ParsedCfg &p,
   }
 
   if (p.type == "image") {
-    lv_obj_t *widget = s.sensor_container
-      ? static_cast<lv_obj_t *>(lv_obj_get_user_data(s.sensor_container))
+    ImageCardCtx *ctx = s.btn
+      ? static_cast<ImageCardCtx *>(lv_obj_get_user_data(s.btn))
       : nullptr;
-    if (widget) {
-      image_card_position_widget(s.btn, widget);
-      lv_obj_t *loading = image_card_loading_widget(widget);
-      image_card_position_widget(s.btn, loading);
-      image_card_refresh_loading_layout(loading);
+    if (ctx && ctx->active) {
+      image_card_refresh_tile_geometry(ctx);
+    } else {
+      lv_obj_t *widget = s.sensor_container
+        ? static_cast<lv_obj_t *>(lv_obj_get_user_data(s.sensor_container))
+        : nullptr;
+      if (widget) {
+        image_card_position_widget(s.btn, widget);
+        lv_obj_t *loading = image_card_loading_widget(widget);
+        image_card_position_widget(s.btn, loading);
+        image_card_refresh_loading_layout(loading);
+      }
     }
     if (s.text_lbl && !lv_obj_has_flag(s.text_lbl, LV_OBJ_FLAG_HIDDEN)) {
       image_card_align_label_stack(s.text_lbl, s.btn);
