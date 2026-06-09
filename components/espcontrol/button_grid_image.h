@@ -621,6 +621,15 @@ inline void image_card_high_quality_request_size(lv_coord_t target_width, lv_coo
   image_card_limit_target_size(width, height, request_width, request_height);
 }
 
+inline void image_card_tile_request_size(lv_coord_t target_width, lv_coord_t target_height,
+                                         int *request_width, int *request_height) {
+  if (image_card_modal_refresh_supported()) {
+    image_card_high_quality_request_size(target_width, target_height, request_width, request_height);
+    return;
+  }
+  image_card_limit_target_size(target_width, target_height, request_width, request_height);
+}
+
 inline void image_card_apply_active_geometry(ImageCardCtx *ctx) {
   if (!ctx || !ctx->image) return;
   if (image_card_modal_active_for(ctx) && image_card_apply_modal_geometry(ctx, ctx->image)) return;
@@ -932,6 +941,20 @@ inline void image_card_request_picture(ImageCardCtx *ctx) {
   }
 }
 
+inline void subscribe_image_card_entity_state(ImageCardCtx *ctx,
+                                              const std::string &entity_id) {
+  if (!ctx || entity_id.empty()) return;
+  const uint32_t generation = ha_subscription_generation();
+  ha_subscribe_state(
+    entity_id,
+    std::function<void(esphome::StringRef)>(
+      [ctx, entity_id, generation](esphome::StringRef) {
+        if (!image_card_context_current(ctx, entity_id, generation)) return;
+        image_card_request_picture(ctx);
+      })
+  );
+}
+
 inline bool image_card_context_current(ImageCardCtx *ctx,
                                        const std::string &entity_id,
                                        uint32_t generation) {
@@ -974,7 +997,7 @@ inline void image_card_request_source_url(ImageCardCtx *ctx) {
   }
   int request_width = 0;
   int request_height = 0;
-  image_card_high_quality_request_size(width, height, &request_width, &request_height);
+  image_card_tile_request_size(width, height, &request_width, &request_height);
   ctx->url = image_card_cache_bust_url(
     image_card_sized_url(ctx->source_url, request_width, request_height));
   ctx->requested_once = true;
@@ -1334,6 +1357,7 @@ inline bool bind_image_card(BtnSlot &s, const ParsedCfg &p, const GridConfig &cf
         image_card_handle_picture(ctx, picture);
       })
   );
+  subscribe_image_card_entity_state(ctx, p.entity);
   image_card_request_picture(ctx);
   return true;
 }
