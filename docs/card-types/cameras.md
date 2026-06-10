@@ -10,14 +10,6 @@ A Camera card shows a still image from a Home Assistant `camera` or `image` enti
 
 Camera cards are display cards. They do not stream live video, pan the camera, or send camera control actions. Tapping the card opens a larger view of the latest loaded image.
 
-::: info Developer feature
-Camera cards are currently available as a developer feature. If you do not see **Camera Card** in the card type picker, enable developer or experimental features in the setup page first.
-:::
-
-::: warning P4 screens only
-Camera cards are for ESP32-P4 based screens. They are not supported on the ESP32-S3 screen because camera images need more memory and processing power than the S3 model can reliably provide.
-:::
-
 ## Setting Up a Camera Card
 
 1. Select a card and change its type to **Camera Card**.
