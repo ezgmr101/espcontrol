@@ -31,6 +31,8 @@ documentation under `docs/`. For the longer contributor walkthrough, use
   served by the device.
 - [Firmware](firmware.md) - the on-device LVGL grid, card runtime, modals, fonts,
   and parser notes.
+- [Font Guidelines](font-guidelines.md) - how to reuse existing firmware font
+  roles and avoid unnecessary new font sizes.
 - [Devices and Builds](devices-and-builds.md) - device profiles, generated
   package files, firmware bundles, and release-facing outputs.
 - [Checks and Releases](checks-and-releases.md) - local verification commands and
