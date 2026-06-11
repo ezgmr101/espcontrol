@@ -654,6 +654,7 @@ inline void grid_refresh_layout(
   OrderResult parsed, order;
   parse_order_string(order_str, NS, parsed);
   clear_spanned_cells(parsed, NS, COLS, order);
+  clock_bar_clear_responsive_grid_cards(main_page_obj);
 
   lv_obj_t *first_card = nullptr;
   if (parsed.positions[0] >= 1 && parsed.positions[0] <= NS) {
@@ -725,6 +726,7 @@ inline void grid_phase1(
   OrderResult parsed, order;
   parse_order_string(order_str, NS, parsed);
   clear_spanned_cells(parsed, NS, COLS, order);
+  clock_bar_clear_responsive_grid_cards(main_page_obj);
 
   bool has_on, has_off, has_sensor_color;
   uint32_t on_val = parse_hex_color(on_hex, has_on);
@@ -1318,6 +1320,7 @@ inline void grid_phase2(
     lv_obj_set_style_pad_row(sub_scr, mp_pad_row, LV_PART_MAIN);
     lv_obj_set_style_pad_column(sub_scr, mp_pad_col, LV_PART_MAIN);
     lv_obj_clear_flag(sub_scr, LV_OBJ_FLAG_SCROLLABLE);
+    clock_bar_clear_responsive_grid_cards(sub_scr);
 
     lv_obj_t *back_btn = create_grid_card_button(
       sub_scr, sp_radius, sp_pad, sp_btn_fnt, sp_txt_color);

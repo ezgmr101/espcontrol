@@ -41,12 +41,150 @@ inline void format_clock_time_without_suffix(char *buf, size_t size,
 
 // ── Clock-bar page visibility ────────────────────────────────────────
 
+struct ClockBarResponsiveGridCard {
+  lv_obj_t *page = nullptr;
+  lv_obj_t *card = nullptr;
+  int col = 0;
+  int row = 0;
+  int col_span = 1;
+  int row_span = 1;
+  int cols = 1;
+  int rows = 1;
+};
+
+inline std::vector<ClockBarResponsiveGridCard> &clock_bar_responsive_grid_cards() {
+  static std::vector<ClockBarResponsiveGridCard> cards;
+  return cards;
+}
+
+inline lv_coord_t clock_bar_div_round_closest(lv_coord_t dividend, int divisor) {
+  if (divisor <= 0) return 0;
+  return (dividend + divisor / 2) / divisor;
+}
+
+inline lv_coord_t clock_bar_equal_fr_track_size(lv_coord_t usable,
+                                                int track_count,
+                                                int track_index) {
+  if (track_count < 1) track_count = 1;
+  if (track_index < 0) track_index = 0;
+  if (track_index >= track_count) track_index = track_count - 1;
+  lv_coord_t remaining_usable = usable;
+  int remaining_tracks = track_count;
+  for (int i = 0; i < track_count; i++) {
+    lv_coord_t size = clock_bar_div_round_closest(remaining_usable, remaining_tracks);
+    if (i == track_index) return size;
+    remaining_usable -= size;
+    remaining_tracks--;
+  }
+  return 0;
+}
+
+inline lv_coord_t clock_bar_grid_track_span_size(lv_coord_t total_size,
+                                                 lv_coord_t pad_start,
+                                                 lv_coord_t pad_end,
+                                                 lv_coord_t gap,
+                                                 int track_count,
+                                                 int start,
+                                                 int span) {
+  if (track_count < 1) track_count = 1;
+  if (start < 0) start = 0;
+  if (start >= track_count) start = track_count - 1;
+  if (span < 1) span = 1;
+  if (span > track_count - start) span = track_count - start;
+  lv_coord_t usable = total_size - pad_start - pad_end - gap * (track_count - 1);
+  if (usable <= 0) return 0;
+  lv_coord_t size = gap * (span - 1);
+  for (int offset = 0; offset < span; offset++) {
+    size += clock_bar_equal_fr_track_size(usable, track_count, start + offset);
+  }
+  return size;
+}
+
+inline void clock_bar_apply_responsive_grid_card_size(
+    const ClockBarResponsiveGridCard &entry) {
+  if (!entry.page || !entry.card) return;
+  if (entry.col_span <= 1 && entry.row_span <= 1) return;
+  lv_obj_update_layout(entry.page);
+  lv_coord_t width = clock_bar_grid_track_span_size(
+      lv_obj_get_width(entry.page),
+      lv_obj_get_style_pad_left(entry.page, LV_PART_MAIN),
+      lv_obj_get_style_pad_right(entry.page, LV_PART_MAIN),
+      lv_obj_get_style_pad_column(entry.page, LV_PART_MAIN),
+      entry.cols,
+      entry.col,
+      entry.col_span);
+  lv_coord_t height = clock_bar_grid_track_span_size(
+      lv_obj_get_height(entry.page),
+      lv_obj_get_style_pad_top(entry.page, LV_PART_MAIN),
+      lv_obj_get_style_pad_bottom(entry.page, LV_PART_MAIN),
+      lv_obj_get_style_pad_row(entry.page, LV_PART_MAIN),
+      entry.rows,
+      entry.row,
+      entry.row_span);
+  if (entry.col_span > 1 && width > 0) lv_obj_set_width(entry.card, width);
+  if (entry.row_span > 1 && height > 0) lv_obj_set_height(entry.card, height);
+}
+
+inline void clock_bar_clear_responsive_grid_cards(lv_obj_t *page) {
+  if (!page) return;
+  std::vector<ClockBarResponsiveGridCard> &cards = clock_bar_responsive_grid_cards();
+  cards.erase(
+      std::remove_if(cards.begin(), cards.end(),
+                     [page](const ClockBarResponsiveGridCard &entry) {
+                       return entry.page == page;
+                     }),
+      cards.end());
+}
+
+inline void clock_bar_refresh_responsive_grid_cards(lv_obj_t *page = nullptr) {
+  std::vector<ClockBarResponsiveGridCard> &cards = clock_bar_responsive_grid_cards();
+  for (const ClockBarResponsiveGridCard &entry : cards) {
+    if (page && entry.page != page) continue;
+    clock_bar_apply_responsive_grid_card_size(entry);
+  }
+}
+
+inline void clock_bar_register_responsive_grid_card(lv_obj_t *page,
+                                                    lv_obj_t *card,
+                                                    int col,
+                                                    int row,
+                                                    int col_span,
+                                                    int row_span,
+                                                    int cols,
+                                                    int rows) {
+  if (!page || !card) return;
+  if (col_span <= 1 && row_span <= 1) return;
+  ClockBarResponsiveGridCard next;
+  next.page = page;
+  next.card = card;
+  next.col = col;
+  next.row = row;
+  next.col_span = col_span;
+  next.row_span = row_span;
+  next.cols = cols;
+  next.rows = rows;
+
+  std::vector<ClockBarResponsiveGridCard> &cards = clock_bar_responsive_grid_cards();
+  for (ClockBarResponsiveGridCard &entry : cards) {
+    if (entry.card == card) {
+      entry = next;
+      clock_bar_apply_responsive_grid_card_size(entry);
+      return;
+    }
+  }
+  cards.push_back(next);
+  clock_bar_apply_responsive_grid_card_size(cards.back());
+}
+
 inline std::vector<lv_obj_t *> &clock_bar_button_grid_pages() {
   static std::vector<lv_obj_t *> pages;
   return pages;
 }
 
 inline void clock_bar_clear_button_grid_pages() {
+  for (lv_obj_t *page : clock_bar_button_grid_pages()) {
+    clock_bar_clear_responsive_grid_cards(page);
+  }
   clock_bar_button_grid_pages().clear();
 }
 
@@ -70,6 +208,7 @@ inline void clock_bar_set_button_grid_pages_pad_top(lv_obj_t *main_page_obj,
     lv_obj_set_style_pad_top(page, pad_top, LV_PART_MAIN);
     lv_obj_update_layout(page);
   }
+  clock_bar_refresh_responsive_grid_cards();
 }
 
 inline bool clock_bar_active_on_button_grid_page(lv_obj_t *main_page_obj = nullptr) {

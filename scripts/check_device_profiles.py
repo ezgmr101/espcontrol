@@ -328,6 +328,24 @@ def test_grid_phase2_uses_cleaned_spanned_layout() -> None:
     )
 
 
+def test_spanned_cards_refresh_after_clock_bar_padding_changes() -> None:
+    backlight = (ROOT / "components" / "espcontrol" / "backlight.h").read_text(encoding="utf-8")
+    layout = (ROOT / "components" / "espcontrol" / "button_grid_layout.h").read_text(encoding="utf-8")
+    grid = (ROOT / "components" / "espcontrol" / "button_grid_grid.h").read_text(encoding="utf-8")
+    assert "struct ClockBarResponsiveGridCard" in backlight, (
+        "spanned card dimensions must be tracked outside the one-time grid placement pass"
+    )
+    assert "clock_bar_refresh_responsive_grid_cards();" in backlight, (
+        "clock-bar padding changes must resize registered wide/tall/large cards"
+    )
+    assert "clock_bar_register_responsive_grid_card(" in layout, (
+        "wide/tall/large cards must register their measured grid span"
+    )
+    assert "clock_bar_clear_responsive_grid_cards(main_page_obj);" in grid, (
+        "main-grid refreshes must replace old responsive card registrations"
+    )
+
+
 def test_temperature_unit_changes_refresh_weather_cards() -> None:
     config = (ROOT / "components" / "espcontrol" / "button_grid_config.h").read_text(encoding="utf-8")
     match = re.search(
@@ -402,6 +420,7 @@ def main() -> int:
     test_weather_card_visual_matches_preview()
     test_weather_card_mode_visibility_reset()
     test_grid_phase2_uses_cleaned_spanned_layout()
+    test_spanned_cards_refresh_after_clock_bar_padding_changes()
     test_temperature_unit_changes_refresh_weather_cards()
     test_current_weather_state_updates_availability()
     test_firmware_matrices(profile_slugs)

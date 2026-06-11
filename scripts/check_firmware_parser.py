@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CONFIG_HEADER = ROOT / "components" / "espcontrol" / "button_grid_config.h"
 CONTRACT_HEADER = ROOT / "components" / "espcontrol" / "button_grid_contract_generated.h"
 CARD_RUNTIME_HEADER = ROOT / "components" / "espcontrol" / "button_grid_card_runtime.h"
+BACKLIGHT_HEADER = ROOT / "components" / "espcontrol" / "backlight.h"
 LAYOUT_HEADER = ROOT / "components" / "espcontrol" / "button_grid_layout.h"
 
 
@@ -40,6 +41,7 @@ class StringRef {
 }
 
 struct lv_obj_t {};
+struct lv_disp_t {};
 using lv_coord_t = int;
 using lv_style_selector_t = int;
 using lv_color_t = int;
@@ -63,6 +65,7 @@ constexpr int LV_OBJ_FLAG_HIDDEN = 2;
 constexpr int LV_GRAD_DIR_HOR = 1;
 inline int lv_color_hex(uint32_t value) { return static_cast<int>(value); }
 inline int lv_pct(int value) { return value; }
+inline lv_obj_t *lv_scr_act() { return nullptr; }
 inline void lv_obj_set_style_transform_scale_x(lv_obj_t *, int, int) {}
 inline void lv_obj_set_style_transform_scale_y(lv_obj_t *, int, int) {}
 inline void lv_obj_set_style_bg_color(lv_obj_t *, int, lv_style_selector_t) {}
@@ -88,10 +91,17 @@ inline int lv_obj_get_style_pad_top(lv_obj_t *, int) { return 0; }
 inline int lv_obj_get_style_pad_bottom(lv_obj_t *, int) { return 0; }
 inline int lv_obj_get_style_pad_column(lv_obj_t *, int) { return 0; }
 inline int lv_obj_get_style_pad_row(lv_obj_t *, int) { return 0; }
+inline lv_obj_t *lv_obj_get_parent(lv_obj_t *) { return nullptr; }
+inline lv_disp_t *lv_disp_get_default() { return nullptr; }
+inline int lv_disp_get_hor_res(lv_disp_t *) { return 480; }
+inline int lv_disp_get_ver_res(lv_disp_t *) { return 480; }
 inline void lv_label_set_long_mode(lv_obj_t *, int) {}
+inline void lv_obj_set_size(lv_obj_t *, int, int) {}
 inline void lv_obj_set_width(lv_obj_t *, int) {}
 inline void lv_obj_set_height(lv_obj_t *, int) {}
+inline void lv_obj_set_pos(lv_obj_t *, int, int) {}
 inline void lv_obj_set_grid_cell(lv_obj_t *, int, int, int, int, int, int) {}
+inline void lv_obj_set_style_pad_top(lv_obj_t *, int, int) {}
 inline void lv_obj_update_layout(lv_obj_t *) {}
 inline void lv_label_set_text(lv_obj_t *, const char *) {}
 inline void lv_obj_align(lv_obj_t *, int, int, int) {}
@@ -99,6 +109,7 @@ inline void lv_obj_move_foreground(lv_obj_t *) {}
 
 #include "temperature_unit.h"
 #include "button_grid_config_pure.h"
+#include "backlight.h"
 #include "button_grid_layout.h"
 
 int main() {
@@ -117,16 +128,16 @@ int main() {
   grid_token_spans('x', row_span, col_span);
   assert(row_span == 1 && col_span == 3);
 
-  assert(grid_equal_fr_track_size(434, 3, 0) == 145);
-  assert(grid_equal_fr_track_size(434, 3, 1) == 145);
-  assert(grid_equal_fr_track_size(434, 3, 2) == 144);
-  assert(grid_track_span_size(480, 8, 8, 15, 3, 0, 1) == 145);
-  assert(grid_track_span_size(480, 8, 8, 15, 3, 0, 2) == 305);
-  assert(grid_track_span_size(480, 8, 8, 15, 3, 1, 2) == 304);
-  assert(grid_track_span_size(480, 8, 8, 15, 3, 0, 3) == 464);
-  assert(grid_track_span_size(1024, 5, 5, 10, 5, 0, 2) == 400);
-  assert(grid_track_span_size(1024, 5, 5, 10, 5, 3, 2) == 399);
-  assert(grid_track_span_size(600, 42, 5, 10, 3, 0, 2) == 366);
+  assert(clock_bar_equal_fr_track_size(434, 3, 0) == 145);
+  assert(clock_bar_equal_fr_track_size(434, 3, 1) == 145);
+  assert(clock_bar_equal_fr_track_size(434, 3, 2) == 144);
+  assert(clock_bar_grid_track_span_size(480, 8, 8, 15, 3, 0, 1) == 145);
+  assert(clock_bar_grid_track_span_size(480, 8, 8, 15, 3, 0, 2) == 305);
+  assert(clock_bar_grid_track_span_size(480, 8, 8, 15, 3, 1, 2) == 304);
+  assert(clock_bar_grid_track_span_size(480, 8, 8, 15, 3, 0, 3) == 464);
+  assert(clock_bar_grid_track_span_size(1024, 5, 5, 10, 5, 0, 2) == 400);
+  assert(clock_bar_grid_track_span_size(1024, 5, 5, 10, 5, 3, 2) == 399);
+  assert(clock_bar_grid_track_span_size(600, 42, 5, 10, 3, 0, 2) == 366);
 
   assert(cfg_field("light.kitchen;Kitchen;Auto;Lightbulb", 0) == "light.kitchen");
   assert(cfg_field("light.kitchen;Kitchen;Auto;Lightbulb", 3) == "Lightbulb");
@@ -412,6 +423,7 @@ def main() -> int:
         shutil.copy2(ROOT / "components" / "espcontrol" / "temperature_unit.h", tmp_path / "temperature_unit.h")
         shutil.copy2(CONTRACT_HEADER, tmp_path / "button_grid_contract_generated.h")
         shutil.copy2(CARD_RUNTIME_HEADER, tmp_path / "button_grid_card_runtime.h")
+        shutil.copy2(BACKLIGHT_HEADER, tmp_path / "backlight.h")
         shutil.copy2(LAYOUT_HEADER, tmp_path / "button_grid_layout.h")
         source = tmp_path / "check_firmware_parser.cpp"
         binary = tmp_path / "check_firmware_parser"
