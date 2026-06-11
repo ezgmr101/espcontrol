@@ -2082,10 +2082,10 @@ inline void grid_phase3(
           if (state == "on") {
             *presence_detected_ptr = true;
             lv_disp_trig_activity(NULL);
-            wake_callback();
+            if (wake_callback) wake_callback();
           } else if (state == "off") {
             *presence_detected_ptr = false;
-            sleep_callback();
+            if (sleep_callback) sleep_callback();
           }
         })
     );
