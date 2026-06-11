@@ -182,14 +182,6 @@ script:
           then:
             - script.execute: screensaver_idle_check
           else:
-            - lambda: |-
-                media_volume_hide_modal();
-                climate_control_hide_modal();
-                option_select_hide_modal();
-                switch_confirmation_hide_modal();
-                alarm_pin_hide_modal();
-                network_status_hide_modal();
-            - script.execute: hide_cover_art_view
             - if:
                 condition:
                   lambda: 'return screensaver_action_clock_mode(id(screensaver_action).current_option());'
@@ -199,6 +191,14 @@ script:
                       value: 'true'
                   - script.execute: show_clock_view
                 else:
+                  - lambda: |-
+                      media_volume_hide_modal();
+                      climate_control_hide_modal();
+                      option_select_hide_modal();
+                      switch_confirmation_hide_modal();
+                      alarm_pin_hide_modal();
+                      network_status_hide_modal();
+                  - script.execute: hide_cover_art_view
                   - if:
                       condition:
                         lambda: 'return screensaver_action_dimmed_mode(id(screensaver_action).current_option());'
@@ -743,6 +743,7 @@ script:
       - script.execute: backlight_fade_current_ui_to_black
       - script.wait: backlight_fade_current_ui_to_black
       - lvgl.widget.show: clock_screensaver
+      - lambda: 'lv_obj_move_foreground(id(clock_screensaver));'
       - output.set_level:
           id: gpio_backlight_pwm
           level: 0%

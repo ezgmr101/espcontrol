@@ -830,6 +830,47 @@ def firmware_screensaver_wake_guard_errors(backlight_path: Path, cover_art_path:
     return errors
 
 
+def firmware_clock_screensaver_overlay_errors(backlight_path: Path, root: Path) -> list[str]:
+    errors: list[str] = []
+    if not backlight_path.exists():
+        return errors
+
+    rel = backlight_path.relative_to(root)
+    text = backlight_path.read_text(encoding="utf-8")
+    sleep_body = yaml_script_body(text, "screensaver_sleep_timer")
+    show_body = yaml_script_body(text, "show_clock_view")
+
+    if sleep_body is None:
+        errors.append(f"{rel}: missing screensaver_sleep_timer script")
+    else:
+        show_index = sleep_body.find("script.execute: show_clock_view")
+        if show_index == -1:
+            errors.append(f"{rel}: keep clock screensaver activation explicit")
+        else:
+            pre_clock_show = sleep_body[:show_index]
+            cleanup_tokens = (
+                "media_volume_hide_modal();",
+                "climate_control_hide_modal();",
+                "option_select_hide_modal();",
+                "switch_confirmation_hide_modal();",
+                "alarm_pin_hide_modal();",
+                "network_status_hide_modal();",
+                "script.execute: hide_cover_art_view",
+            )
+            if any(token in pre_clock_show for token in cleanup_tokens):
+                errors.append(f"{rel}: let the clock screensaver overlay the existing UI without closing it")
+
+    if show_body is None:
+        errors.append(f"{rel}: missing show_clock_view script")
+    elif (
+        "lvgl.widget.show: clock_screensaver" not in show_body
+        or "lv_obj_move_foreground(id(clock_screensaver))" not in show_body
+    ):
+        errors.append(f"{rel}: raise the clock screensaver above existing top-layer UI")
+
+    return errors
+
+
 def firmware_climate_step_errors(firmware_dir: Path, root: Path) -> list[str]:
     path = firmware_dir / "button_grid_climate.h"
     if not path.exists():
@@ -972,6 +1013,7 @@ def run_scan() -> int:
     errors.extend(firmware_image_card_startup_errors(FIRMWARE_DIR, CORE_INFRA_PATH, ROOT))
     errors.extend(firmware_artwork_image_auth_errors(ARTWORK_IMAGE_PATH, ROOT))
     errors.extend(firmware_screensaver_wake_guard_errors(BACKLIGHT_PATH, COVER_ART_PATH, ROOT))
+    errors.extend(firmware_clock_screensaver_overlay_errors(BACKLIGHT_PATH, ROOT))
     errors.extend(firmware_climate_step_errors(FIRMWARE_DIR, ROOT))
     errors.extend(
         firmware_s3_api_errors(
@@ -1334,6 +1376,19 @@ def expect_screensaver_wake_guard_errors(
         cover_art_path.write_text(cover_art_text, encoding="utf-8")
 
         errors = firmware_screensaver_wake_guard_errors(backlight_path, cover_art_path, root)
+        for item in expected:
+            assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
+        if not expected:
+            assert not errors, f"{name}: expected no errors, got {errors!r}"
+
+
+def expect_clock_screensaver_overlay_errors(name: str, text: str, expected: tuple[str, ...]) -> None:
+    with TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        path = root / "common" / "addon" / "backlight.yaml"
+        path.parent.mkdir(parents=True)
+        path.write_text(text, encoding="utf-8")
+        errors = firmware_clock_screensaver_overlay_errors(path, root)
         for item in expected:
             assert any(item in error for error in errors), f"{name}: missing {item!r} in {errors!r}"
         if not expected:
@@ -2486,6 +2541,61 @@ def run_self_test() -> int:
         "                      value: 'false'\n",
         valid_cover_art_wake_guard,
         (),
+    )
+    expect_clock_screensaver_overlay_errors(
+        "clock screensaver closes active UI before showing",
+        "script:\n"
+        "  - id: screensaver_sleep_timer\n"
+        "    then:\n"
+        "      - lambda: |-\n"
+        "          media_volume_hide_modal();\n"
+        "          climate_control_hide_modal();\n"
+        "      - script.execute: hide_cover_art_view\n"
+        "      - if:\n"
+        "          condition:\n"
+        "            lambda: 'return screensaver_action_clock_mode(id(screensaver_action).current_option());'\n"
+        "          then:\n"
+        "            - script.execute: show_clock_view\n"
+        "  - id: show_clock_view\n"
+        "    then:\n"
+        "      - lvgl.widget.show: clock_screensaver\n"
+        "      - lambda: 'lv_obj_move_foreground(id(clock_screensaver));'\n",
+        ("overlay the existing UI without closing it",),
+    )
+    expect_clock_screensaver_overlay_errors(
+        "clock screensaver overlays active UI",
+        "script:\n"
+        "  - id: screensaver_sleep_timer\n"
+        "    then:\n"
+        "      - if:\n"
+        "          condition:\n"
+        "            lambda: 'return screensaver_action_clock_mode(id(screensaver_action).current_option());'\n"
+        "          then:\n"
+        "            - script.execute: show_clock_view\n"
+        "          else:\n"
+        "            - lambda: |-\n"
+        "                media_volume_hide_modal();\n"
+        "            - script.execute: hide_cover_art_view\n"
+        "  - id: show_clock_view\n"
+        "    then:\n"
+        "      - lvgl.widget.show: clock_screensaver\n"
+        "      - lambda: 'lv_obj_move_foreground(id(clock_screensaver));'\n",
+        (),
+    )
+    expect_clock_screensaver_overlay_errors(
+        "clock screensaver stays behind top layer UI",
+        "script:\n"
+        "  - id: screensaver_sleep_timer\n"
+        "    then:\n"
+        "      - if:\n"
+        "          condition:\n"
+        "            lambda: 'return screensaver_action_clock_mode(id(screensaver_action).current_option());'\n"
+        "          then:\n"
+        "            - script.execute: show_clock_view\n"
+        "  - id: show_clock_view\n"
+        "    then:\n"
+        "      - lvgl.widget.show: clock_screensaver\n",
+        ("raise the clock screensaver above existing top-layer UI",),
     )
     expect_artwork_image_auth_errors(
         "local artwork image request uses Basic auth",
