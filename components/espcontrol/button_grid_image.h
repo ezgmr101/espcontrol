@@ -144,6 +144,9 @@ inline bool image_card_apply_modal_geometry(
   esphome::artwork_image::ArtworkImage *image,
   lv_coord_t *target_width = nullptr,
   lv_coord_t *target_height = nullptr);
+inline void image_card_show_modal_image(
+  ImageCardCtx *ctx,
+  esphome::artwork_image::ArtworkImage *image);
 inline bool image_card_queue_modal_source_request(ImageCardCtx *ctx);
 inline void image_card_schedule_source_refresh(ImageCardCtx *ctx, uint32_t delay_ms,
                                                const char *reason);
@@ -475,10 +478,12 @@ inline void image_card_apply_modal_downloaded(ImageCardCtx *ctx) {
   if (!image_card_modal_active_for(ctx)) return;
   if (ctx->modal_image->get_url() != ctx->modal_url) return;
   ImageCardModalUi &ui = image_card_modal_ui();
-  image_card_set_widget_source(ui.image_widget, ctx->modal_image);
   image_card_apply_modal_geometry(ctx, ctx->modal_image);
+  image_card_set_widget_source(ui.image_widget, ctx->modal_image);
+  lv_obj_move_background(ui.image_widget);
   image_card_hide_modal_loading(ctx);
   lv_obj_move_foreground(ui.back_btn);
+  if (ui.panel) lv_obj_invalidate(ui.panel);
   notify_dashboard_content_changed();
 }
 
@@ -674,6 +679,24 @@ inline bool image_card_apply_modal_geometry(ImageCardCtx *ctx,
   if (target_width) *target_width = width;
   if (target_height) *target_height = height;
   return true;
+}
+
+inline bool image_card_modal_has_tile_fallback(ImageCardCtx *ctx) {
+  return ctx && ctx->image && ctx->image_ready;
+}
+
+inline void image_card_show_modal_image(ImageCardCtx *ctx,
+                                        esphome::artwork_image::ArtworkImage *image) {
+  ImageCardModalUi &ui = image_card_modal_ui();
+  if (!ctx || !image_card_modal_active_for(ctx) || !image) return;
+  image_card_apply_modal_geometry(ctx, image);
+  image_card_set_widget_source(ui.image_widget, image);
+  lv_obj_move_background(ui.image_widget);
+  if (ui.loading_widget && !lv_obj_has_flag(ui.loading_widget, LV_OBJ_FLAG_HIDDEN)) {
+    lv_obj_move_foreground(ui.loading_widget);
+  }
+  lv_obj_move_foreground(ui.back_btn);
+  if (ui.panel) lv_obj_invalidate(ui.panel);
 }
 
 inline bool image_card_modal_refresh_supported() {
@@ -1224,7 +1247,9 @@ inline bool image_card_request_modal_source_url(ImageCardCtx *ctx) {
   ctx->modal_image->set_resize_mode(
     ctx->modal_fit ? esphome::artwork_image::ImageResizeMode::FIT
                    : esphome::artwork_image::ImageResizeMode::COVER);
-  image_card_show_modal_loading(ctx, "Loading");
+  if (!image_card_modal_has_tile_fallback(ctx)) {
+    image_card_show_modal_loading(ctx, "Loading");
+  }
   ESP_LOGI("image_card", "Downloading modal camera image for %s", ctx->entity_id.c_str());
   int max_source_dim = width > height ? width : height;
   std::string effective_url = ctx->modal_image->request_update_url(ctx->modal_url, max_source_dim);
@@ -1263,7 +1288,9 @@ inline bool image_card_queue_modal_source_request(ImageCardCtx *ctx) {
     return false;
   }
   ImageCardModalUi &ui = image_card_modal_ui();
-  image_card_show_modal_loading(ctx, "Loading");
+  if (!image_card_modal_has_tile_fallback(ctx)) {
+    image_card_show_modal_loading(ctx, "Loading");
+  }
   image_card_cancel_modal_request_timer();
   ui.request_timer = lv_timer_create(
     image_card_modal_request_timer_cb, IMAGE_CARD_MODAL_REQUEST_DELAY_MS, ctx);
@@ -1390,13 +1417,8 @@ inline void image_card_open_modal(ImageCardCtx *ctx) {
   lv_obj_set_style_text_align(loading_label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
   lv_label_set_text(loading_label, espcontrol_i18n("Loading"));
 
-  image_card_set_widget_source(ui.image_widget, ctx->image);
-  image_card_apply_modal_geometry(ctx, ctx->image);
+  image_card_show_modal_image(ctx, ctx->image);
   image_card_queue_modal_source_request(ctx);
-  lv_obj_move_background(ui.image_widget);
-  if (ui.loading_widget && !lv_obj_has_flag(ui.loading_widget, LV_OBJ_FLAG_HIDDEN)) {
-    lv_obj_move_foreground(ui.loading_widget);
-  }
   lv_obj_move_foreground(ui.back_btn);
   lv_obj_move_foreground(ui.overlay);
 }
