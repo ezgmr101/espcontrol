@@ -281,6 +281,18 @@ async function assertSettingsPage(page, label, options = {}) {
   assert(appearanceVisible, `${label}: settings content should render`);
   assert.strictEqual(themeVisible, !!options.isEpaper, `${label}: theme selector visibility should match display type`);
   assert.strictEqual(onColorVisible, !options.isEpaper, `${label}: color controls visibility should match display type`);
+  const nightScheduleCard = page.locator("#sp-settings .card").filter({
+    has: page.locator(".card-header h3", { hasText: /^Night Schedule$/ }),
+  }).first();
+  assert(await nightScheduleCard.isVisible(), `${label}: night schedule settings card should render`);
+  await nightScheduleCard.locator(".card-header").click();
+  const nightScheduleInfo = page.locator("#sp-night-schedule-info");
+  assert(await nightScheduleInfo.isVisible(), `${label}: night schedule override info panel should render`);
+  assert.strictEqual(
+    await nightScheduleInfo.innerText(),
+    "Night Schedule overrides screensaver and Media Cover Art settings while it is active.",
+    `${label}: night schedule override info panel text should match`
+  );
   if (!options.isEpaper) {
     const coverArtCard = page.locator("#sp-settings .card").filter({
       has: page.locator(".card-header h3", { hasText: /^Media Cover Art$/ }),

@@ -26,6 +26,21 @@ function coverArtTrackOverlayDurationSupported() {
   return !!(CFG && CFG.coverArtSquareOverlay);
 }
 
+function infoPanel(id, text) {
+  var panel = document.createElement("div");
+  panel.className = "sp-info-panel";
+  panel.id = id;
+  panel.setAttribute("role", "note");
+  var icon = document.createElement("span");
+  icon.className = "mdi mdi-information-outline";
+  icon.setAttribute("aria-hidden", "true");
+  var message = document.createElement("span");
+  message.textContent = text;
+  panel.appendChild(icon);
+  panel.appendChild(message);
+  return panel;
+}
+
 function buildSettingsPage(parent) {
   var page = document.createElement("div");
   page.id = "sp-settings";
@@ -153,6 +168,10 @@ function buildSettingsPage(parent) {
   var backlightCard = makeCollapsibleCard("Backlight", blBody, true);
 
   var scheduleBody = document.createElement("div");
+  scheduleBody.appendChild(infoPanel(
+    "sp-night-schedule-info",
+    "Night Schedule overrides screensaver and Media Cover Art settings while it is active."
+  ));
   scheduleBody.appendChild(fieldLabel("Mode"));
   var scheduleSegment = document.createElement("div");
   scheduleSegment.className = "sp-segment sp-screensaver-mode";
@@ -589,18 +608,10 @@ function buildSettingsPage(parent) {
 
   var coverArtBody = document.createElement("div");
   if (!isEpaperPreview()) {
-    var coverArtInfo = document.createElement("div");
-    coverArtInfo.className = "sp-info-panel";
-    coverArtInfo.id = "sp-cover-art-info";
-    coverArtInfo.setAttribute("role", "note");
-    var coverArtInfoIcon = document.createElement("span");
-    coverArtInfoIcon.className = "mdi mdi-information-outline";
-    coverArtInfoIcon.setAttribute("aria-hidden", "true");
-    var coverArtInfoText = document.createElement("span");
-    coverArtInfoText.textContent = "Media Cover Art overrides existing screensaver settings while the selected media player is playing.";
-    coverArtInfo.appendChild(coverArtInfoIcon);
-    coverArtInfo.appendChild(coverArtInfoText);
-    coverArtBody.appendChild(coverArtInfo);
+    coverArtBody.appendChild(infoPanel(
+      "sp-cover-art-info",
+      "Media Cover Art overrides existing screensaver settings while the selected media player is playing."
+    ));
 
     var coverArtToggle = toggleRow(
       "Show Cover Art",
