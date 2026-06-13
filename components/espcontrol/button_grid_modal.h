@@ -26,6 +26,7 @@ enum class ControlModalKind {
   IMAGE_CARD,
   TODO_LIST,
   COVER_CONTROL,
+  LIGHT_CONTROL,
 };
 
 using ControlModalCloseCallback = void (*)();

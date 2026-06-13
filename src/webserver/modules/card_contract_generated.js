@@ -714,6 +714,27 @@ var CARD_CONTRACT_CARDS = {
       "options": ""
     }
   },
+  "light_control": {
+    "label": "Lights",
+    "allowInSubpage": true,
+    "pickerKey": "light_brightness",
+    "experimental": "developer",
+    "hidden": true,
+    "domains": [
+      "light"
+    ],
+    "default": {
+      "entity": "",
+      "label": "",
+      "icon": "Lightbulb Outline",
+      "icon_on": "Lightbulb",
+      "sensor": "",
+      "unit": "",
+      "type": "light_control",
+      "precision": "",
+      "options": ""
+    }
+  },
   "lock": {
     "label": "Lock",
     "allowInSubpage": true,
@@ -1257,6 +1278,7 @@ var CARD_CONTRACT_SUBPAGE_TYPE_CODES = {
   "fan_preset": "Z",
   "light_brightness": "V",
   "light_switch": "Q",
+  "light_control": "LC",
   "alarm": "Y",
   "alarm_action": "AA",
   "slider": "L",
@@ -1290,6 +1312,7 @@ var CARD_CONTRACT_SUBPAGE_TYPES_BY_CODE = {
   "Z": "fan_preset",
   "V": "light_brightness",
   "Q": "light_switch",
+  "LC": "light_control",
   "Y": "alarm",
   "AA": "alarm_action",
   "L": "slider",
