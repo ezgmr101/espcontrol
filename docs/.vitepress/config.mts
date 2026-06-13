@@ -452,6 +452,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
+          { text: '3D Printable Stands', link: '/reference/3d-printable-stands' },
           { text: 'Contributing', link: '/reference/contributing' },
           { text: 'Icon Reference', link: '/reference/icons' },
           { text: 'Language Support', link: '/reference/language-support' },
