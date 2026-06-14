@@ -715,7 +715,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
     ui.tab_row, find_icon("Blinds"), ctx->icon_font,
     CoverControlTab::POSITION, ctx->width_compensation_percent);
   ui.tilt_tab = cover_control_create_tab_button(
-    ui.tab_row, find_icon("Blinds Open"), ctx->icon_font,
+    ui.tab_row, find_icon("Swap Vertical"), ctx->icon_font,
     CoverControlTab::TILT, ctx->width_compensation_percent);
 
   ui.controls_box = lv_obj_create(ui.panel);
