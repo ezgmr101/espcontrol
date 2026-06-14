@@ -712,7 +712,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
     ui.tab_row, find_icon("Gesture Tap"), ctx->icon_font,
     CoverControlTab::CONTROLS, ctx->width_compensation_percent);
   ui.position_tab = cover_control_create_tab_button(
-    ui.tab_row, find_icon("Blinds Horizontal"), ctx->icon_font,
+    ui.tab_row, find_icon("Blinds"), ctx->icon_font,
     CoverControlTab::POSITION, ctx->width_compensation_percent);
   ui.tilt_tab = cover_control_create_tab_button(
     ui.tab_row, find_icon("Blinds Open"), ctx->icon_font,
