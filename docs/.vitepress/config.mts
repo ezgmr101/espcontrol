@@ -375,7 +375,7 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/' },
           { text: 'Install', link: '/getting-started/install' },
-          { text: 'Manual ESPHome Setup', link: '/getting-started/manual-esphome-setup' },
+          { text: 'Manual Setup', link: '/getting-started/manual-esphome-setup' },
           { text: 'Enable Actions', link: '/getting-started/home-assistant-actions' },
           { text: '3D Printable Stands', link: '/reference/3d-printable-stands' },
           { text: 'Troubleshooting', link: '/getting-started/troubleshooting' },
