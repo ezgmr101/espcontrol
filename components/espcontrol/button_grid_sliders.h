@@ -578,6 +578,7 @@ inline void cover_control_update_slider_handle(lv_obj_t *slider, lv_obj_t *handl
   lv_obj_set_size(handle, handle_w, handle_h);
   lv_obj_set_style_radius(handle, handle_h / 2, LV_PART_MAIN);
   lv_obj_align(handle, LV_ALIGN_TOP_MID, 0, y);
+  lv_obj_clear_flag(handle, LV_OBJ_FLAG_HIDDEN);
   lv_obj_move_foreground(handle);
 }
 
@@ -602,6 +603,7 @@ inline void cover_control_update_position_handle(lv_obj_t *slider, lv_obj_t *han
   lv_obj_set_size(handle, handle_w, handle_h);
   lv_obj_set_style_radius(handle, handle_h / 2, LV_PART_MAIN);
   lv_obj_align(handle, LV_ALIGN_TOP_MID, 0, y);
+  lv_obj_clear_flag(handle, LV_OBJ_FLAG_HIDDEN);
   lv_obj_move_foreground(handle);
 }
 
@@ -880,8 +882,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
   ui.position_slider = lv_slider_create(ui.panel);
   cover_control_style_slider(ui.position_slider, ctx->accent_color);
   ui.position_fill = cover_control_create_position_fill(ui.position_slider, ctx->accent_color);
-  ui.position_handle = cover_control_create_slider_handle(
-    ui.position_fill ? ui.position_fill : ui.position_slider);
+  ui.position_handle = cover_control_create_slider_handle(ui.position_slider);
   lv_slider_set_value(ui.position_slider, slider_clamp_pct(ctx->current_position), LV_ANIM_OFF);
   lv_obj_add_event_cb(ui.position_slider, [](lv_event_t *e) {
     CoverControlModalUi &ui = cover_control_modal_ui();
