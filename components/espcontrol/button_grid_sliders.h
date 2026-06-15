@@ -363,6 +363,27 @@ inline lv_coord_t light_control_slider_handle_inset(lv_obj_t *slider) {
   return inset;
 }
 
+inline lv_coord_t light_control_slider_handle_height(lv_obj_t *slider) {
+  if (!slider) return 6;
+  lv_coord_t height = lv_obj_get_height(slider);
+  lv_coord_t handle_h = height / 70;
+  if (handle_h < 5) handle_h = 5;
+  if (handle_h > 8) handle_h = 8;
+  return handle_h;
+}
+
+inline lv_coord_t light_control_slider_fill_height(lv_obj_t *slider, int pct) {
+  if (!slider) return 0;
+  lv_coord_t height = lv_obj_get_height(slider);
+  if (height <= 0) return 0;
+  lv_coord_t fill_h = (lv_coord_t)((int32_t) height * slider_clamp_pct(pct) / 100);
+  lv_coord_t min_handle_cap = light_control_slider_handle_inset(slider) * 2 +
+    light_control_slider_handle_height(slider);
+  if (fill_h < min_handle_cap) fill_h = min_handle_cap;
+  if (fill_h > height) fill_h = height;
+  return fill_h;
+}
+
 inline lv_obj_t *light_control_create_slider_fill(lv_obj_t *slider, lv_color_t fill_color) {
   if (!slider) return nullptr;
   lv_obj_set_style_bg_opa(slider, LV_OPA_TRANSP, LV_PART_INDICATOR);
@@ -389,20 +410,7 @@ inline void light_control_update_slider_fill(lv_obj_t *slider, lv_obj_t *fill,
   if (height <= 0 || width <= 0) return;
   pct = slider_clamp_pct(pct);
   lv_obj_set_style_bg_color(fill, fill_color, LV_PART_MAIN);
-  lv_coord_t handle_h = height / 70;
-  if (handle_h < 5) handle_h = 5;
-  if (handle_h > 8) handle_h = 8;
-  lv_coord_t fill_h = height;
-  if (pct < 100) {
-    lv_coord_t inset = light_control_slider_handle_inset(slider);
-    lv_coord_t travel = height - inset * 2 - handle_h;
-    if (travel < 0) travel = 0;
-    lv_coord_t y = inset + (lv_coord_t)((int32_t) travel * (100 - pct) / 100);
-    lv_coord_t fill_top = y + handle_h / 2;
-    if (fill_top < 0) fill_top = 0;
-    if (fill_top > height) fill_top = height;
-    fill_h = height - fill_top;
-  }
+  lv_coord_t fill_h = light_control_slider_fill_height(slider, pct);
   lv_obj_set_size(fill, width, fill_h);
   lv_obj_set_style_radius(fill, 0, LV_PART_MAIN);
   lv_obj_align(fill, LV_ALIGN_BOTTOM_MID, 0, 0);
@@ -419,13 +427,12 @@ inline void light_control_update_slider_handle(lv_obj_t *slider, lv_obj_t *handl
   if (handle_w < 20) handle_w = 20;
   if (handle_w > width - 12) handle_w = width - 12;
   if (handle_w < 8) handle_w = 8;
-  lv_coord_t handle_h = height / 70;
-  if (handle_h < 5) handle_h = 5;
-  if (handle_h > 8) handle_h = 8;
+  lv_coord_t handle_h = light_control_slider_handle_height(slider);
   lv_coord_t inset = light_control_slider_handle_inset(slider);
-  lv_coord_t travel = height - inset * 2 - handle_h;
-  if (travel < 0) travel = 0;
-  lv_coord_t y = inset + (lv_coord_t)((int32_t) travel * (100 - slider_clamp_pct(pct)) / 100);
+  lv_coord_t fill_h = light_control_slider_fill_height(slider, pct);
+  lv_coord_t y = height - fill_h + inset;
+  if (y < inset) y = inset;
+  if (y > height - inset - handle_h) y = height - inset - handle_h;
   if (y > height - handle_h) y = height - handle_h;
   lv_obj_set_size(handle, handle_w, handle_h);
   lv_obj_set_style_radius(handle, handle_h / 2, LV_PART_MAIN);
