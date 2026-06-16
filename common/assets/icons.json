@@ -24,6 +24,12 @@
       "comment": "Modal close button"
     },
     {
+      "name": "Folder",
+      "codepoint": "F024B",
+      "mdi": "folder",
+      "comment": "Default subpage indicator"
+    },
+    {
       "name": "Download",
       "codepoint": "F01DA",
       "mdi": "download",
@@ -933,6 +939,11 @@
       "name": "Oven",
       "codepoint": "F04DE",
       "mdi": "stove"
+    },
+    {
+      "name": "Palette",
+      "codepoint": "F03D8",
+      "mdi": "palette"
     },
     {
       "name": "Package",
