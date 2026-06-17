@@ -153,7 +153,7 @@
           "name": "alarm_card_type",
           "label": "Type",
           "kind": "choice",
-          "values": ["control_panel", "away", "home", "disarm"],
+          "values": ["control_panel", "away", "home", "night", "vacation", "disarm"],
           "defaultValue": "control_panel"
         },
         {
@@ -172,7 +172,7 @@
           "name": "actions",
           "label": "Visible Actions",
           "kind": "choice",
-          "values": ["away", "home", "disarm"],
+          "values": ["away", "home", "night", "vacation", "disarm"],
           "defaultValue": "away|home|disarm"
         },
         {
@@ -208,6 +208,20 @@
               "service": "alarm_control_panel.alarm_arm_home",
               "icon": "Shield Home",
               "legacyIcon": "Home"
+            },
+            {
+              "value": "night",
+              "label": "Arm Night",
+              "service": "alarm_control_panel.alarm_arm_night",
+              "icon": "Weather Night",
+              "legacyIcon": "Weather Night"
+            },
+            {
+              "value": "vacation",
+              "label": "Arm Vacation",
+              "service": "alarm_control_panel.alarm_arm_vacation",
+              "icon": "Airplane",
+              "legacyIcon": "Airplane"
             },
             {
               "value": "disarm",

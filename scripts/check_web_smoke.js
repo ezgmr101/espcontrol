@@ -328,11 +328,17 @@ assert(
   hooks.buttonTypePreviewFor("alarm", { label: "Alarm", icon: "Alarm", type: "alarm", options: "icon_display=static" }).iconHtml.includes("mdi-bell-ring"),
   "alarm preview uses the selected Alarm icon"
 );
-assert.deepStrictEqual(Array.from(hooks.alarmCardTypeOptionValues(false)), ["control_panel", "away", "home", "disarm"]);
-assert.deepStrictEqual(Array.from(hooks.alarmCardTypeOptionValues(true)), ["control_panel", "away", "home", "disarm"]);
+assert.deepStrictEqual(Array.from(hooks.alarmCardTypeOptionValues(false)), ["control_panel", "away", "home", "night", "vacation", "disarm"]);
+assert.deepStrictEqual(Array.from(hooks.alarmCardTypeOptionValues(true)), ["control_panel", "away", "home", "night", "vacation", "disarm"]);
 assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonConfig(
   "alarm_control_panel.house;House;Security;Auto;;;alarm;;actions=away%7Cdisarm"
 ))), ["away", "disarm"]);
+assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonConfig(
+  "alarm_control_panel.house;House;Security;Auto;;;alarm;;actions=night%7Cvacation"
+))), ["night", "vacation"]);
+assert.deepStrictEqual(Array.from(hooks.alarmVisibleActions(hooks.parseButtonConfig(
+  "alarm_control_panel.house;House;Security;Auto;;;alarm;;actions=away%7Chome%7Cnight%7Cvacation%7Cdisarm"
+))), ["away", "home", "night"]);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", false, false), false);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", true, false), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerForExperimental("fan_speed", true, true), true);
