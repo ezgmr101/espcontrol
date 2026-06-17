@@ -15,6 +15,9 @@ globals:
   - id: cover_art_download_url
     type: std::string
     initial_value: '""'
+  - id: cover_art_active_download_source_url
+    type: std::string
+    initial_value: '""'
   - id: cover_art_pending_remote_url
     type: std::string
     initial_value: '""'
@@ -522,15 +525,24 @@ script:
                 id: cover_art_image_available
                 value: 'true'
             - lambda: |-
-                id(cover_art_loaded_url) = id(cover_art_url);
+                std::string applied_url = id(cover_art_active_download_source_url).empty()
+                    ? id(cover_art_url)
+                    : id(cover_art_active_download_source_url);
+                bool applied_current_url = applied_url == id(cover_art_url);
+                id(cover_art_loaded_url) = applied_url;
                 id(cover_art_download_url).clear();
-                id(cover_art_refresh_needed) = false;
-                id(cover_art_retry_url) = id(cover_art_url);
+                id(cover_art_active_download_source_url).clear();
+                id(cover_art_refresh_needed) = !applied_current_url;
+                id(cover_art_retry_url) = applied_current_url ? id(cover_art_url) : std::string();
                 id(cover_art_retry_count) = 0;
                 auto *img = id(cover_art_downloaded_image);
                 ESP_LOGI("cover_art", "Applying artwork image=%dx%d content=%dx%d offset=%d,%d",
                          img->get_width(), img->get_height(), img->get_content_width(), img->get_content_height(),
                          img->get_content_offset_x(), img->get_content_offset_y());
+                if (!applied_current_url) {
+                  ESP_LOGI("cover_art", "Current artwork URL changed during download; scheduling follow-up refresh");
+                  id(cover_art_deferred_download).execute();
+                }
             - script.execute: cover_art_apply_responsive_layout
             - script.execute: cover_art_extract_accent_color
             - script.wait: cover_art_extract_accent_color
@@ -678,6 +690,8 @@ script:
             - if:
                 condition:
                   lambda: |-
+                    id(cover_art_download_url).clear();
+                    id(cover_art_active_download_source_url).clear();
                     return !id(cover_art_fallback_url).empty() &&
                            id(cover_art_url) != id(cover_art_fallback_url);
                 then:
@@ -733,6 +747,7 @@ script:
       - lambda: |-
           id(cover_art_url).clear();
           id(cover_art_download_url).clear();
+          id(cover_art_active_download_source_url).clear();
           id(cover_art_pending_remote_url).clear();
           id(cover_art_pending_local_url).clear();
           id(cover_art_cached_remote_url).clear();
@@ -796,6 +811,16 @@ script:
                       ESP_LOGI("cover_art", "Released current artwork before replacement download");
                       id(cover_art_loaded_url).clear();
             - lambda: |-
+                if (!id(cover_art_active_download_source_url).empty() &&
+                    !id(cover_art_download_url).empty()) {
+                  if (id(cover_art_active_download_source_url) == id(cover_art_url)) {
+                    ESP_LOGI("cover_art", "Artwork download already active for current URL; skipping duplicate request");
+                  } else {
+                    ESP_LOGI("cover_art", "Artwork URL changed during active download; deferring follow-up request");
+                    id(cover_art_refresh_needed) = true;
+                  }
+                  return;
+                }
                 if (id(cover_art_url) != id(cover_art_retry_url)) {
                   id(cover_art_retry_url) = id(cover_art_url);
                   id(cover_art_retry_count) = 0;
@@ -811,6 +836,7 @@ script:
                 };
                 const bool needs_artwork_refresh =
                     id(cover_art_refresh_needed) || !id(cover_art_image_available);
+                id(cover_art_active_download_source_url) = id(cover_art_url);
                 id(cover_art_download_url) = needs_artwork_refresh
                     ? refresh_ha_media_proxy_url(id(cover_art_url))
                     : id(cover_art_url);
@@ -822,6 +848,9 @@ script:
                          id(cover_art_refresh_needed) ? "true" : "false");
                 id(cover_art_download_url) =
                     id(cover_art_downloaded_image)->request_update_url(id(cover_art_download_url));
+                if (id(cover_art_download_url).empty()) {
+                  id(cover_art_active_download_source_url).clear();
+                }
 
   - id: cover_art_deferred_download
     mode: restart
@@ -890,6 +919,11 @@ script:
           }
 
           if (chosen.empty()) return;
+          if (!id(cover_art_active_download_source_url).empty() &&
+              !id(cover_art_download_url).empty()) {
+            ESP_LOGI("cover_art", "Cached artwork update received during active download; keeping current request");
+            return;
+          }
 
           std::string fallback;
           std::string capped = esphome::artwork_image::cap_artwork_url(chosen, ${cover_art_decode_size});
@@ -1200,6 +1234,8 @@ script:
             - lambda: |-
                 id(cover_art_image_available) = false;
                 id(cover_art_loaded_url).clear();
+                id(cover_art_download_url).clear();
+                id(cover_art_active_download_source_url).clear();
       - script.execute: clock_bar_apply
 
   - id: cover_art_delay_timer
