@@ -222,6 +222,29 @@ current.generatedContract.requiredCards.forEach((type) => {
 });
 assert.strictEqual(hooks.cardContractCardLabel("media"), "Media", "generated contract exposes card labels");
 assert.strictEqual(hooks.cardContractAllowInSubpage("subpage"), false, "generated contract exposes subpage placement rules");
+const subpageKindOption = Array.from(hooks.cardContractOptions("subpage"))
+  .find((option) => option.name === "subpage_kind");
+assert.deepStrictEqual(Array.from(subpageKindOption.values), [
+  "",
+  "switch",
+  "lights",
+  "climate",
+  "presence",
+  "media",
+  "alarm",
+  "cover",
+  "garage",
+  "lock",
+  "vacuum",
+  "weather",
+  "sensor",
+  "image",
+], "subpage type options include status presets for newer card styles");
+assert.strictEqual(
+  hooks.subpageKind({ options: "subpage_kind=vacuum" }),
+  "vacuum",
+  "vacuum subpage type is accepted by the web config normalizer"
+);
 assert.deepStrictEqual(Array.from(hooks.cardContractDomains("climate")), ["climate"], "generated contract exposes card domains");
 assert.deepStrictEqual(buttonShape(hooks.cardContractDefaultConfig("climate")), buttonShape({
   entity: "",
@@ -2066,6 +2089,22 @@ const parsedActionNumericState = hooks.parseButtonConfig(hooks.serializeButtonCo
 assert.strictEqual(hooks.actionCardStateDisplayMode(parsedActionNumericState), "numeric", "action card numeric state mode");
 assert.strictEqual(hooks.actionCardStateUnit(parsedActionNumericState), "W", "action card numeric state unit");
 assert.strictEqual(hooks.actionCardStatePrecision(parsedActionNumericState), "1", "action card numeric state precision");
+
+const scriptActionZeroPrecisionStateCard = {
+  entity: "script.kitchen_lights",
+  label: "Kitchen Lights",
+  icon: "Flash",
+  icon_on: "Auto",
+  sensor: "script.turn_on",
+  unit: "",
+  type: "action",
+  precision: "",
+  options: "state_entity=sensor.kitchen_power,state_precision=0",
+};
+assertButtonRoundTrip(hooks, "script action card with zero-precision numeric state display", scriptActionZeroPrecisionStateCard, false);
+const parsedActionZeroPrecisionState = hooks.parseButtonConfig(hooks.serializeButtonConfig(scriptActionZeroPrecisionStateCard));
+assert.strictEqual(hooks.actionCardStateDisplayMode(parsedActionZeroPrecisionState), "numeric", "action card zero-precision numeric state mode");
+assert.strictEqual(hooks.actionCardStatePrecision(parsedActionZeroPrecisionState), "0", "action card zero-precision numeric state precision");
 
 const scriptActionTextStateCard = {
   entity: "script.washer",
