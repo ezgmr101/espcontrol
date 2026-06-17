@@ -149,7 +149,7 @@ def firmware_ha_boundary_errors(firmware_dir: Path, root: Path) -> list[str]:
         errors.append(f"{rel}: queue one-off Home Assistant reads until state subscription is ready")
     if "request.callback = std::move(callback)" not in text or "request.entity_id == entity_id" not in text:
         errors.append(f"{rel}: coalesce duplicate deferred Home Assistant reads")
-    if text.count("ha_track_subscription_callback(callback_ref)") < 2:
+    if text.count("ha_track_subscription_callback(callback_ref") < 2:
         errors.append(f"{rel}: track Home Assistant subscription callbacks for generation cleanup")
     if "ha_release_subscription_callbacks_now" not in text or "*ref.callback = nullptr" not in text:
         errors.append(f"{rel}: release retired Home Assistant subscription callback bodies")
@@ -561,8 +561,12 @@ def firmware_cover_art_external_input_errors(path: Path, root: Path) -> list[str
     errors: list[str] = []
     if "cover_art_hide_external_input_enabled" not in text:
         errors.append(f"{rel}: expose a cover art external-input hide setting")
-    if 'ha_subscribe_attribute(cover_entity, std::string("source"), handle_media_source)' not in text:
+    if ('std::string("source")' not in text or
+            "handle_media_source" not in text or
+            "HA_SUBSCRIPTION_SCOPE_COVER_ART" not in text):
         errors.append(f"{rel}: subscribe to the media player source attribute")
+    if "ha_reset_subscription_callbacks(HA_SUBSCRIPTION_SCOPE_COVER_ART)" not in text:
+        errors.append(f"{rel}: release retired cover art Home Assistant subscriptions")
     if 'ha_get_attribute(cover_entity, std::string("source"), handle_media_source)' not in text:
         errors.append(f"{rel}: refresh the media player source attribute")
     if 'next == "TV"' not in text or 'next == "Line-in"' not in text:
@@ -2565,7 +2569,13 @@ def run_self_test() -> int:
         "      - lambda: |-\n"
         "          id(cover_art_hide_external_input_enabled).state && id(cover_art_external_input_active);\n"
         "          bool external = next == \"TV\" || next == \"Line-in\";\n"
-        "          ha_subscribe_attribute(cover_entity, std::string(\"source\"), handle_media_source);\n"
+        "          ha_reset_subscription_callbacks(HA_SUBSCRIPTION_SCOPE_COVER_ART);\n"
+        "          ha_subscribe_attribute(\n"
+        "            cover_entity,\n"
+        "            std::string(\"source\"),\n"
+        "            handle_media_source,\n"
+        "            HA_SUBSCRIPTION_SCOPE_COVER_ART\n"
+        "          );\n"
         "          ha_get_attribute(cover_entity, std::string(\"source\"), handle_media_source);\n",
         (),
     )

@@ -1308,7 +1308,7 @@ inline void ha_reset_deferred_state_requests() {}
 #endif
 
 #ifndef ESPCONTROL_HA_SUBSCRIPTION_HELPERS_DEFINED
-inline void ha_reset_subscription_callbacks() {}
+inline void ha_reset_subscription_callbacks(uint32_t scope = 0) { (void) scope; }
 #endif
 
 inline uint32_t &ha_subscription_generation() {

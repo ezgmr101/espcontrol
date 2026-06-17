@@ -17,6 +17,10 @@ using HomeAssistantStateCallback = std::function<void(esphome::StringRef)>;
 using HomeAssistantActionResponseCallback =
   std::function<void(const esphome::api::ActionResponse &)>;
 
+constexpr uint32_t HA_SUBSCRIPTION_SCOPE_ALL = 0;
+constexpr uint32_t HA_SUBSCRIPTION_SCOPE_DEFAULT = 1u << 0;
+constexpr uint32_t HA_SUBSCRIPTION_SCOPE_COVER_ART = 1u << 1;
+
 inline uint32_t &ha_subscription_generation();
 
 inline bool ha_api_available() {
@@ -82,6 +86,7 @@ inline uint8_t &ha_state_callback_depth() {
 
 struct HaSubscriptionCallbackRef {
   std::shared_ptr<HomeAssistantStateCallback> callback;
+  uint32_t scope = HA_SUBSCRIPTION_SCOPE_DEFAULT;
 };
 
 inline std::vector<HaSubscriptionCallbackRef> &ha_subscription_callback_refs() {
@@ -89,35 +94,60 @@ inline std::vector<HaSubscriptionCallbackRef> &ha_subscription_callback_refs() {
   return refs;
 }
 
-inline bool &ha_subscription_callback_reset_pending() {
-  static bool pending = false;
-  return pending;
+inline uint32_t &ha_subscription_callback_reset_pending_mask() {
+  static uint32_t pending_mask = 0;
+  return pending_mask;
 }
 
-inline void ha_release_subscription_callbacks_now() {
+inline void ha_release_subscription_callbacks_now(uint32_t scope = HA_SUBSCRIPTION_SCOPE_ALL) {
   std::vector<HaSubscriptionCallbackRef> &refs = ha_subscription_callback_refs();
-  for (auto &ref : refs) {
-    if (ref.callback && *ref.callback) {
-      *ref.callback = nullptr;
+  if (scope == HA_SUBSCRIPTION_SCOPE_ALL) {
+    for (auto &ref : refs) {
+      if (ref.callback && *ref.callback) {
+        *ref.callback = nullptr;
+      }
     }
-  }
-  std::vector<HaSubscriptionCallbackRef>().swap(refs);
-}
-
-inline void ha_reset_subscription_callbacks() {
-  if (ha_state_callback_depth() != 0) {
-    ha_subscription_callback_reset_pending() = true;
+    std::vector<HaSubscriptionCallbackRef>().swap(refs);
     return;
   }
-  ha_release_subscription_callbacks_now();
+
+  size_t write_index = 0;
+  for (size_t read_index = 0; read_index < refs.size(); read_index++) {
+    HaSubscriptionCallbackRef &ref = refs[read_index];
+    if ((ref.scope & scope) != 0) {
+      if (ref.callback && *ref.callback) {
+        *ref.callback = nullptr;
+      }
+      continue;
+    }
+    if (write_index != read_index) refs[write_index] = std::move(ref);
+    write_index++;
+  }
+  refs.resize(write_index);
+  if (refs.empty()) {
+    std::vector<HaSubscriptionCallbackRef>().swap(refs);
+  }
+}
+
+inline void ha_reset_subscription_callbacks(uint32_t scope = HA_SUBSCRIPTION_SCOPE_ALL) {
+  if (ha_state_callback_depth() != 0) {
+    uint32_t &pending_mask = ha_subscription_callback_reset_pending_mask();
+    pending_mask = scope == HA_SUBSCRIPTION_SCOPE_ALL
+        ? UINT32_MAX
+        : (pending_mask | scope);
+    return;
+  }
+  ha_release_subscription_callbacks_now(scope);
 }
 #define ESPCONTROL_HA_SUBSCRIPTION_HELPERS_DEFINED 1
 
 inline void ha_track_subscription_callback(
-    const std::shared_ptr<HomeAssistantStateCallback> &callback) {
+    const std::shared_ptr<HomeAssistantStateCallback> &callback,
+    uint32_t scope = HA_SUBSCRIPTION_SCOPE_DEFAULT) {
   if (!callback || !*callback) return;
   ha_subscription_callback_refs().push_back({
     callback,
+    scope,
   });
 }
 
@@ -133,9 +163,15 @@ inline void ha_invoke_state_callback(const std::shared_ptr<HomeAssistantStateCal
   depth++;
   (*callback)(state);
   depth--;
-  if (depth == 0 && ha_subscription_callback_reset_pending()) {
-    ha_subscription_callback_reset_pending() = false;
-    ha_release_subscription_callbacks_now();
+  uint32_t &pending_mask = ha_subscription_callback_reset_pending_mask();
+  if (depth == 0 && pending_mask != 0) {
+    uint32_t mask = pending_mask;
+    pending_mask = 0;
+    if (mask == UINT32_MAX) {
+      ha_release_subscription_callbacks_now();
+    } else {
+      ha_release_subscription_callbacks_now(mask);
+    }
   }
 }
 
@@ -295,10 +331,11 @@ inline bool ha_cancel_action_response_callback(uint32_t call_id, const char *err
 }
 
 inline bool ha_subscribe_state(const std::string &entity_id,
-                               HomeAssistantStateCallback callback) {
+                               HomeAssistantStateCallback callback,
+                               uint32_t scope = HA_SUBSCRIPTION_SCOPE_DEFAULT) {
   if (!ha_api_available() || entity_id.empty() || !callback) return false;
   auto callback_ref = std::make_shared<HomeAssistantStateCallback>(std::move(callback));
-  ha_track_subscription_callback(callback_ref);
+  ha_track_subscription_callback(callback_ref, scope);
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, {},
     [callback_ref](esphome::StringRef state) {
@@ -327,10 +364,11 @@ inline bool ha_get_state(const std::string &entity_id,
 
 inline bool ha_subscribe_attribute(const std::string &entity_id,
                                    const std::string &attribute,
-                                   HomeAssistantStateCallback callback) {
+                                   HomeAssistantStateCallback callback,
+                                   uint32_t scope = HA_SUBSCRIPTION_SCOPE_DEFAULT) {
   if (!ha_api_available() || entity_id.empty() || !callback) return false;
   auto callback_ref = std::make_shared<HomeAssistantStateCallback>(std::move(callback));
-  ha_track_subscription_callback(callback_ref);
+  ha_track_subscription_callback(callback_ref, scope);
   esphome::api::global_api_server->subscribe_home_assistant_state(
     entity_id, attribute,
     [callback_ref](esphome::StringRef state) {
