@@ -647,8 +647,9 @@ inline lv_obj_t *light_control_create_power_button(lv_obj_t *parent, const lv_fo
     lv_label_set_text(label, find_icon(turn_on ? "Power" : "Circle Outline"));
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
     if (font) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
+    apply_width_compensation(label, width_compensation_percent);
     lv_obj_set_style_transform_zoom(label, turn_on ? 230 : 180, LV_PART_MAIN);
-    lv_obj_center(label);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
   }
   lv_obj_add_event_cb(btn, [](lv_event_t *e) {
     bool turn_on = static_cast<bool>(reinterpret_cast<uintptr_t>(lv_event_get_user_data(e)));
@@ -690,14 +691,14 @@ inline void light_control_layout_power(lv_obj_t *group, lv_obj_t *on_btn,
     lv_obj_set_style_radius(on_btn, button_radius, LV_PART_MAIN);
     lv_obj_align(on_btn, LV_ALIGN_TOP_MID, 0, inset);
     lv_obj_t *label = lv_obj_get_child(on_btn, 0);
-    if (label) lv_obj_center(label);
+    if (label) lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
   }
   if (off_btn) {
     lv_obj_set_size(off_btn, button_w, button_h);
     lv_obj_set_style_radius(off_btn, button_radius, LV_PART_MAIN);
     lv_obj_align(off_btn, LV_ALIGN_BOTTOM_MID, 0, -inset);
     lv_obj_t *label = lv_obj_get_child(off_btn, 0);
-    if (label) lv_obj_center(label);
+    if (label) lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
   }
 }
 
