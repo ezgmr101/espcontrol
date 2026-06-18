@@ -120,6 +120,16 @@ def build_esphome_command(
     ]
 
 
+def resolve_esphome_bin(esphome_bin: str, cwd: Path | None = None) -> str:
+    if os.sep not in esphome_bin and (not os.altsep or os.altsep not in esphome_bin):
+        return esphome_bin
+
+    path = Path(esphome_bin).expanduser()
+    if path.is_absolute():
+        return str(path)
+    return str(((cwd or Path.cwd()) / path).resolve())
+
+
 def esphome_working_dir(yaml_path: Path) -> Path:
     return yaml_path.parent
 
@@ -148,7 +158,7 @@ def parse_args(argv: list[str]) -> tuple[bool, Path, str, list[str]]:
 def run(argv: list[str]) -> int:
     dry_run, yaml_path, command, command_args = parse_args(argv)
     version = local_version_for(yaml_path)
-    esphome_bin = os.environ.get("ESPHOME_BIN", "esphome")
+    esphome_bin = resolve_esphome_bin(os.environ.get("ESPHOME_BIN", "esphome"))
     esphome_command = build_esphome_command(yaml_path, command, command_args, version, esphome_bin)
 
     if dry_run:
@@ -190,6 +200,15 @@ class LocalEsphomeTests(unittest.TestCase):
                 "--device",
                 "192.168.1.10",
             ],
+        )
+
+    def test_keeps_esphome_command_name_for_path_lookup(self) -> None:
+        self.assertEqual(resolve_esphome_bin("esphome"), "esphome")
+
+    def test_resolves_relative_esphome_bin_before_changing_directory(self) -> None:
+        self.assertEqual(
+            resolve_esphome_bin(".venv/bin/esphome", cwd=ROOT),
+            str(ROOT / ".venv" / "bin" / "esphome"),
         )
 
     def test_runs_esphome_from_yaml_directory(self) -> None:
