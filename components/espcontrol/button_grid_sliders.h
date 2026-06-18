@@ -647,7 +647,7 @@ inline lv_obj_t *light_control_create_power_button(lv_obj_t *parent, const lv_fo
     lv_label_set_text(label, find_icon(turn_on ? "Power" : "Circle Outline"));
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
     if (font) lv_obj_set_style_text_font(label, font, LV_PART_MAIN);
-    lv_obj_set_style_transform_zoom(label, 230, LV_PART_MAIN);
+    lv_obj_set_style_transform_zoom(label, turn_on ? 230 : 180, LV_PART_MAIN);
     lv_obj_center(label);
   }
   lv_obj_add_event_cb(btn, [](lv_event_t *e) {
@@ -712,35 +712,44 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
   if (tab_count < 1) tab_count = 1;
   lv_coord_t tab_size = layout.back_size * 7 / 10;
   if (tab_size < 48) tab_size = 48;
-  if (tab_size > 60) tab_size = 60;
+  if (tab_size > 68) tab_size = 68;
+  lv_coord_t selected_tab_size = tab_size + tab_size / 8;
   lv_coord_t tab_frame_pad = tab_size / 5;
-  if (tab_frame_pad < 8) tab_frame_pad = 8;
   lv_coord_t tab_gap = tab_size / 4;
-  if (tab_gap < 10) tab_gap = 10;
   lv_coord_t tabs_total_w = tab_size * tab_count + tab_gap * (tab_count - 1);
   lv_coord_t tab_frame_w = tabs_total_w + tab_frame_pad * 2;
   lv_coord_t tab_frame_h = tab_size + tab_frame_pad * 2;
-  lv_coord_t tab_safe_left = layout.back_inset_x + layout.back_size + layout.inset;
-  lv_coord_t tab_safe_w = layout.panel_w - tab_safe_left - layout.inset;
-  if (tab_safe_w < tab_frame_w) tab_safe_w = tab_frame_w;
+  lv_coord_t tab_safe_left = layout.back_inset_x + layout.back_size + layout.inset / 2;
+  lv_coord_t centered_left = (layout.panel_w - tab_frame_w) / 2;
+  while (centered_left < tab_safe_left && tab_size > 40) {
+    tab_size--;
+    selected_tab_size = tab_size + tab_size / 8;
+    tab_frame_pad = tab_size / 5;
+    tab_gap = tab_size / 4;
+    tabs_total_w = tab_size * tab_count + tab_gap * (tab_count - 1);
+    tab_frame_w = tabs_total_w + tab_frame_pad * 2;
+    tab_frame_h = tab_size + tab_frame_pad * 2;
+    centered_left = (layout.panel_w - tab_frame_w) / 2;
+  }
   lv_coord_t slider_w = control_modal_home_card_width(ctx->btn, layout);
   if (ui.tab_row) {
     lv_obj_set_size(ui.tab_row, tab_frame_w, tab_frame_h);
     lv_obj_set_style_radius(ui.tab_row, tab_frame_h / 2, LV_PART_MAIN);
-    lv_coord_t tab_row_x = tab_safe_left + (tab_safe_w - tab_frame_w) / 2;
-    lv_obj_align(ui.tab_row, LV_ALIGN_TOP_LEFT, tab_row_x, layout.inset + 2);
+    if (centered_left < tab_safe_left) centered_left = tab_safe_left;
+    lv_obj_align(ui.tab_row, LV_ALIGN_TOP_LEFT, centered_left, layout.inset + 2);
   }
   lv_coord_t first_tab_x = (tab_frame_w - tabs_total_w) / 2;
   for (int i = 0; i < tab_count; i++) {
     lv_obj_t *tab_btn = light_control_tab_button(ui, visible_tabs.tabs[i]);
     if (!tab_btn) continue;
     bool active = (visible_tabs.tabs[i] == ui.tab);
-    lv_obj_set_size(tab_btn, tab_size, tab_size);
-    lv_obj_set_style_radius(tab_btn, tab_size / 2, LV_PART_MAIN);
+    lv_coord_t tab_btn_size = active ? selected_tab_size : tab_size;
+    lv_obj_set_size(tab_btn, tab_btn_size, tab_btn_size);
+    lv_obj_set_style_radius(tab_btn, tab_btn_size / 2, LV_PART_MAIN);
     lv_coord_t tab_x = first_tab_x + i * (tab_size + tab_gap);
-    lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x, 0);
+    lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
     lv_obj_t *label = lv_obj_get_child(tab_btn, 0);
-    if (label) lv_obj_center(label);
+    if (label) lv_obj_align(label, LV_ALIGN_CENTER, tab_btn_size / 16, tab_btn_size / 16);
   }
 
   lv_coord_t content_center_y = tab_frame_h / 2 + 12;
