@@ -633,7 +633,9 @@ inline uint32_t climate_modal_arc_color(ClimateControlCtx *ctx) {
 
 inline int climate_modal_arc_value(ClimateControlCtx *ctx, bool temp_enabled, int target) {
   if (!ctx) return CLIMATE_DEFAULT_TARGET_TENTHS;
-  return temp_enabled ? climate_clamp_tenths(ctx, target) : ctx->min_tenths;
+  int value = temp_enabled ? climate_clamp_tenths(ctx, target) : ctx->min_tenths;
+  if (climate_uses_cooling_arc(ctx)) return ctx->min_tenths + ctx->max_tenths - value;
+  return value;
 }
 
 inline uint32_t climate_active_color(ClimateControlCtx *ctx) {
