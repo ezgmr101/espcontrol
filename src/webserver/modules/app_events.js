@@ -454,14 +454,6 @@ function connectEvents() {
       if (els.setAutoUpdate) els.setAutoUpdate.checked = state.autoUpdate;
       syncFirmwareUpdateUi();
     },
-    "switch-developer__experimental_features": function (val, d) {
-      state.developerExperimentalFeatures = d.value === true || val === "ON";
-      if (els.setDeveloperExperimentalFeatures) {
-        els.setDeveloperExperimentalFeatures.checked = state.developerExperimentalFeatures;
-      }
-      syncScreenRotationSelect();
-      scheduleRender();
-    },
     "select-firmware__update_frequency": function (val, d) {
       state.firmwareUpdateControlsSupported = true;
       state.updateFrequency = d.value || val || state.updateFrequency;

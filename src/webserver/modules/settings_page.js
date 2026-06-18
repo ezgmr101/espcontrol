@@ -1107,24 +1107,6 @@ function buildSettingsPage(parent) {
 
   var firmwareCard = makeCollapsibleCard("Firmware", fwBody, true);
 
-  var developerCard = null;
-  if (developerExperimentalUrlFlag()) {
-    var devBody = document.createElement("div");
-    var experimentalToggle = toggleRow(
-      "Developer/Experimental Features",
-      "sp-set-developer-experimental-features",
-      state.developerExperimentalFeatures
-    );
-    devBody.appendChild(experimentalToggle.row);
-    experimentalToggle.input.addEventListener("change", function () {
-      state.developerExperimentalFeatures = this.checked;
-      postDeveloperExperimentalFeatures(state.developerExperimentalFeatures);
-      scheduleRender();
-    });
-    els.setDeveloperExperimentalFeatures = experimentalToggle.input;
-    developerCard = makeCollapsibleCard("Developer", devBody, true);
-  }
-
   appendSettingsSection(config, "Display", [
     appearanceCard,
     backlightCard,
@@ -1146,7 +1128,6 @@ function buildSettingsPage(parent) {
     temperatureCard,
     backupCard,
     firmwareCard,
-    developerCard,
   ]);
 
   page.appendChild(config);
