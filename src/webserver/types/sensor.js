@@ -84,6 +84,7 @@ registerButtonType("sensor", {
       if (local === sensorCardIsLocal(b)) return;
       b.type = "sensor";
       b.entity = "";
+      b.label = "";
       b.sensor = local ? SENSOR_CARD_LOCAL_SENSOR : "";
       b.unit = "";
       b.icon = "Auto";
@@ -92,6 +93,7 @@ registerButtonType("sensor", {
       b.options = "";
       helpers.saveField("type", "sensor");
       helpers.saveField("entity", "");
+      helpers.saveField("label", "");
       helpers.saveField("sensor", b.sensor);
       helpers.saveField("unit", "");
       helpers.saveField("icon", "Auto");
