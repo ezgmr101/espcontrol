@@ -322,6 +322,8 @@ assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("alarm", false), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("alarm", true), true);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("alarm_action", false), false);
 assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("alarm_action", true), false);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("local_sensor", false), false);
+assert.strictEqual(hooks.buttonTypeVisibleInPickerFor("local_sensor", true), false);
 const infoOnlyPickerKeys = Array.from(hooks.buttonTypePickerKeysForInfoOnly(true));
 assert(infoOnlyPickerKeys.includes("sensor"), "info-only displays can still add sensor cards");
 assert(infoOnlyPickerKeys.includes("weather"), "info-only displays can still add weather cards");
@@ -347,6 +349,10 @@ assert(
 assert(
   hooks.buttonTypePreviewFor("alarm", { label: "Alarm", icon: "Alarm", type: "alarm", options: "icon_display=static" }).iconHtml.includes("mdi-bell-ring"),
   "alarm preview uses the selected Alarm icon"
+);
+assert(
+  hooks.buttonTypePreviewFor("sensor", { type: "sensor", sensor: "local", entity: "room_temp", unit: "°C", precision: "1" }).iconHtml.includes("0.0"),
+  "sensor preview renders the local sensor subtype"
 );
 assert.deepStrictEqual(Array.from(hooks.alarmCardTypeOptionValues(false)), ["control_panel", "away", "home", "night", "vacation", "disarm"]);
 assert.deepStrictEqual(Array.from(hooks.alarmCardTypeOptionValues(true)), ["control_panel", "away", "home", "night", "vacation", "disarm"]);
@@ -739,6 +745,16 @@ const actionOptionPreview = hooks.buttonTypePreviewFor("action", {
 });
 assert(actionOptionPreview.iconHtml.includes("Option"), "action option-select preview uses option text");
 assert(actionOptionPreview.labelHtml.includes("mdi-chevron-down"), "action option-select preview uses the dropdown badge");
+
+const localActionPreview = hooks.buttonTypePreviewFor("action", {
+  entity: "zoom_mute",
+  label: "Zoom Mute",
+  icon: "Gesture Tap",
+  sensor: "local",
+  type: "action",
+});
+assert(localActionPreview.iconHtml.includes("mdi-gesture-tap"), "local action subtype preview uses the local action icon");
+assert(localActionPreview.labelHtml.includes("mdi-chip"), "local action subtype preview uses the local action badge");
 
 const alarmActionPreview = hooks.buttonTypePreviewFor("alarm_action", {
   entity: "alarm_control_panel.house",
