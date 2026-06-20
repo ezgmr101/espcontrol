@@ -153,6 +153,7 @@ registerButtonType("local_sensor", {
     // ── Picker builder ───────────────────────────────────────────────
     function buildDropdown(sensors) {
       pickerSection.innerHTML = "";
+      pickerSection.className = "";
       var wantType = isTextMode ? "text" : "numeric";
       var filtered = sensors.filter(function (s) {
         return s.type === wantType && (showAll || !s.internal);
@@ -220,6 +221,7 @@ registerButtonType("local_sensor", {
 
     function buildManualInput() {
       pickerSection.innerHTML = "";
+      pickerSection.className = "sp-local-picker-fallback";
 
       var errDiv = document.createElement("div");
       errDiv.className = "sp-banner sp-error";

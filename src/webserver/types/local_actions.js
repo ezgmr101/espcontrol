@@ -107,7 +107,7 @@ registerButtonType("local", {
     // ── Unreachable fallback ─────────────────────────────────────────
     function buildFallback() {
       pickerSection.innerHTML = "";
-      pickerSection.className = "";
+      pickerSection.className = "sp-local-picker-fallback";
       var banner = document.createElement("div");
       banner.className = "sp-banner sp-error";
       banner.textContent = "Could not reach device. Enter the action key manually.";
