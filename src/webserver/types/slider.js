@@ -129,7 +129,24 @@ function sliderTypeFactory(opts) {
       var coverPositionInput = null;
       var singleIconSection = null;
       var offIconSection = null;
-      var syncCoverUi = function () {};
+      var coverTabsSection = null;
+      var syncCoverIconUi = function () {};
+      var syncCoverUi = function () {
+        syncCoverControlTabs();
+        syncCoverIconUi();
+      };
+
+      function syncCoverControlTabs() {
+        if (!opts.coverControlTabs || !coverTabsSection) return;
+        coverTabsSection.innerHTML = "";
+        if (coverMode === "modal") {
+          renderCoverControlTabSettings(coverTabsSection, b, helpers);
+          return;
+        }
+        var previousOptions = b.options || "";
+        b.options = "";
+        if (b.options !== previousOptions) helpers.saveField("options", b.options);
+      }
 
       function syncIconSection(section, value) {
         if (!section) return;
@@ -249,12 +266,9 @@ function sliderTypeFactory(opts) {
 
       if (opts.renderLabelInSettings && opts.labelAfterEntity) labelField();
 
-      if (opts.coverControlTabs && coverMode === "modal") {
-        renderCoverControlTabSettings(panel, b, helpers);
-      } else if (opts.coverControlTabs) {
-        var previousOptions = b.options || "";
-        b.options = "";
-        if (b.options !== previousOptions) helpers.saveField("options", b.options);
+      if (opts.coverControlTabs) {
+        coverTabsSection = document.createElement("div");
+        panel.appendChild(coverTabsSection);
       }
 
       function iconField(label, inputSuffix, field, currentVal, defaultVal) {
@@ -282,7 +296,7 @@ function sliderTypeFactory(opts) {
         var onIconSection = iconField(
           opts.iconOnFieldLabel || "Open Icon", "icon-on", "icon_on", onIconVal, opts.defaultIconOn
         );
-        syncCoverUi = function () {
+        syncCoverIconUi = function () {
           var singleIcon = opts.interactionMode && coverCommandMode(coverMode);
           singleIconSection.style.display = singleIcon ? "" : "none";
           offIconSection.style.display = singleIcon ? "none" : "";

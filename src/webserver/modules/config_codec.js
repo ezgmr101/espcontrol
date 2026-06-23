@@ -749,6 +749,9 @@ function setCoverControlTabs(b, tabs) {
 }
 
 function renderModalTabSettings(panel, b, helpers, config) {
+  var section = document.createElement("div");
+  panel.appendChild(section);
+
   b.options = config.normalizeOptions(b.options);
   var tabs = config.tabs(b);
   var definitions = config.definitions();
@@ -767,11 +770,11 @@ function renderModalTabSettings(panel, b, helpers, config) {
   var heading = document.createElement("div");
   heading.className = "sp-field";
   heading.appendChild(helpers.fieldLabel("Modal Tabs"));
-  panel.appendChild(heading);
+  section.appendChild(heading);
 
   var list = document.createElement("div");
   list.className = "sp-light-tab-list";
-  panel.appendChild(list);
+  section.appendChild(list);
 
   function listRows() {
     return Array.prototype.slice.call(list.querySelectorAll(".sp-light-tab-row"));
@@ -900,6 +903,7 @@ function renderModalTabSettings(panel, b, helpers, config) {
   });
 
   updateMoveButtons();
+  return section;
 }
 
 function normalizeSubpageKind(value) {
