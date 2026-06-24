@@ -173,6 +173,7 @@ var state = {
   firmwareInstallTargetVersion: "",
   firmwareInstallPostPending: false,
   firmwareInstallStatus: "",
+  firmwareInstallError: "",
   firmwareUpdateControlsSupported: false,
   firmwareInstallControlsSupported: false,
   firmwareOtaUrl: "",
@@ -1239,6 +1240,9 @@ function renderFirmwareUpdateStatus() {
   if (state.firmwareUpdateState === "INSTALLING") {
     status = state.firmwareInstallStatus || "Installing update\u2026";
     cls += " sp-update-installing";
+  } else if (state.firmwareInstallError) {
+    status = escHtml(state.firmwareInstallError);
+    cls += " sp-update-error";
   } else if (firmwareInstallAvailable()) {
     status = publicFirmwareStatusHtml();
     cls += " sp-update-available";
@@ -1314,6 +1318,7 @@ function setFirmwareUpdateInfo(d) {
     updateState = "INSTALLING";
   }
   state.firmwareUpdateState = updateState;
+  if (state.firmwareUpdateState) state.firmwareInstallError = "";
   state.firmwareReleaseUrl = d.release_url || state.firmwareReleaseUrl || "";
   if (state.firmwareUpdateState === "NO UPDATE" &&
       !isSpecificFirmwareVersion(state.firmwareVersion) &&

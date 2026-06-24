@@ -101,6 +101,12 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
     if (!b.sensor.empty()) b.icon_on.clear();
     b.options = garage_card_options_normalized(b.options, b.sensor);
   }
+  if (b.type == "cover") {
+    if (!card_runtime_cover_mode_valid(b.sensor)) b.sensor.clear();
+    b.precision.clear();
+    if (b.sensor != "set_position") b.unit.clear();
+    b.options = cover_card_options_normalized(b.options, b.sensor);
+  }
   if (b.type == "alarm") {
     b.sensor.clear();
     b.unit.clear();
@@ -155,6 +161,12 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
     b.precision.clear();
     b.options.clear();
   }
+  if (b.type == "light_control") {
+    b.sensor.clear();
+    b.unit.clear();
+    b.precision.clear();
+    b.options = light_control_card_options_normalized(b.options);
+  }
   if (b.type == "subpage") {
     b.options = subpage_card_options_normalized(b.options, b.sensor, b.precision);
   }
@@ -188,11 +200,11 @@ inline SubpageBtn normalize_subpage_btn(SubpageBtn b) {
   p.precision = b.precision;
   if (!b.type.empty() && b.type != "action" && b.type != "alarm" &&
       b.type != "alarm_action" &&
-      b.type != "climate" && b.type != "garage" &&
+      b.type != "climate" && b.type != "cover" && b.type != "garage" &&
       b.type != "webhook" &&
       b.type != "todo" &&
       b.type != "sensor" && b.type != "door_window" && b.type != "presence" &&
-      b.type != "subpage" &&
+      b.type != "subpage" && b.type != "light_control" &&
       !fan_card_type(b.type) && !card_large_numbers_supported(p)) {
     b.options.clear();
   }
