@@ -422,29 +422,29 @@ inline void light_control_apply_tab_visibility() {
   if (!ctx) return;
   LightControlVisibleTabs visible_tabs = light_control_visible_tabs(ctx);
   if (!visible_tabs.contains(ui.tab)) ui.tab = visible_tabs.tabs[0];
-  bool show_tab_row = visible_tabs.count > 1;
+  bool show_tab_bar = visible_tabs.count > 1;
   bool show_power = ui.tab == LightControlTab::POWER;
   bool show_brightness = ui.tab == LightControlTab::BRIGHTNESS;
   bool show_temperature = ui.tab == LightControlTab::TEMPERATURE;
   bool show_color = ui.tab == LightControlTab::COLOR;
   if (ui.tab_row) {
-    if (show_tab_row) lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_bar) lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.power_tab) {
-    if (show_tab_row && visible_tabs.contains(LightControlTab::POWER)) lv_obj_clear_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_bar && visible_tabs.contains(LightControlTab::POWER)) lv_obj_clear_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.power_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.brightness_tab) {
-    if (show_tab_row && visible_tabs.contains(LightControlTab::BRIGHTNESS)) lv_obj_clear_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_bar && visible_tabs.contains(LightControlTab::BRIGHTNESS)) lv_obj_clear_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.brightness_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.temperature_tab) {
-    if (show_tab_row && visible_tabs.contains(LightControlTab::TEMPERATURE)) lv_obj_clear_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_bar && visible_tabs.contains(LightControlTab::TEMPERATURE)) lv_obj_clear_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.temperature_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.color_tab) {
-    if (show_tab_row && visible_tabs.contains(LightControlTab::COLOR)) lv_obj_clear_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_bar && visible_tabs.contains(LightControlTab::COLOR)) lv_obj_clear_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.color_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.power_group) {
@@ -728,6 +728,7 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
 
   int tab_count = static_cast<int>(visible_tabs.count);
   if (tab_count < 1) tab_count = 1;
+  bool show_tab_bar = tab_count > 1;
   lv_coord_t tab_size = layout.back_size * 7 / 10;
   if (tab_size < 48) tab_size = 48;
   if (tab_size > 68) tab_size = 68;
@@ -739,8 +740,7 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
   lv_coord_t tab_frame_h = tab_size + tab_frame_pad * 2;
   lv_coord_t tab_safe_left = layout.back_inset_x + layout.back_size + layout.inset / 2;
   lv_coord_t centered_left = (layout.panel_w - tab_frame_w) / 2;
-  bool show_tab_row = tab_count > 1;
-  while (show_tab_row && centered_left < tab_safe_left && tab_size > 48) {
+  while (show_tab_bar && centered_left < tab_safe_left && tab_size > 48) {
     tab_size--;
     selected_tab_size = tab_size + tab_size / 8;
     tab_frame_pad = tab_size / 5;
@@ -750,10 +750,10 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
     tab_frame_h = tab_size + tab_frame_pad * 2;
     centered_left = (layout.panel_w - tab_frame_w) / 2;
   }
-  if (!show_tab_row) tab_frame_h = 0;
+  if (!show_tab_bar) tab_frame_h = 0;
   lv_coord_t slider_w = control_modal_home_card_width(ctx->btn, layout);
   if (ui.tab_row) {
-    if (show_tab_row) {
+    if (show_tab_bar) {
       lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
       lv_obj_set_size(ui.tab_row, tab_frame_w, tab_frame_h);
       lv_obj_set_style_radius(ui.tab_row, tab_frame_h / 2, LV_PART_MAIN);
@@ -764,24 +764,26 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
     }
   }
   lv_coord_t first_tab_x = (tab_frame_w - tabs_total_w) / 2;
-  if (show_tab_row) {
-    for (int i = 0; i < tab_count; i++) {
-      lv_obj_t *tab_btn = light_control_tab_button(ui, visible_tabs.tabs[i]);
-      if (!tab_btn) continue;
-      bool active = (visible_tabs.tabs[i] == ui.tab);
-      lv_coord_t tab_btn_size = active ? selected_tab_size : tab_size;
-      lv_obj_set_size(tab_btn, tab_btn_size, tab_btn_size);
-      lv_obj_set_style_radius(tab_btn, tab_btn_size / 2, LV_PART_MAIN);
-      lv_coord_t tab_x = first_tab_x + i * (tab_size + tab_gap);
-      lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
-      lv_obj_t *label = lv_obj_get_child(tab_btn, 0);
-      light_control_center_icon_label(label);
-    }
+  for (int i = 0; show_tab_bar && i < tab_count; i++) {
+    lv_obj_t *tab_btn = light_control_tab_button(ui, visible_tabs.tabs[i]);
+    if (!tab_btn) continue;
+    bool active = (visible_tabs.tabs[i] == ui.tab);
+    lv_coord_t tab_btn_size = active ? selected_tab_size : tab_size;
+    lv_obj_set_size(tab_btn, tab_btn_size, tab_btn_size);
+    lv_obj_set_style_radius(tab_btn, tab_btn_size / 2, LV_PART_MAIN);
+    lv_coord_t tab_x = first_tab_x + i * (tab_size + tab_gap);
+    lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
+    lv_obj_t *label = lv_obj_get_child(tab_btn, 0);
+    light_control_center_icon_label(label);
   }
 
-  lv_coord_t content_center_y = tab_frame_h / 2 + 12;
-  lv_coord_t slider_h = layout.panel_h - layout.inset * 3 - tab_frame_h - 16;
+  lv_coord_t content_top = show_tab_bar
+    ? layout.inset + tab_frame_h + 16
+    : layout.inset * 2;
+  lv_coord_t content_bottom = layout.panel_h - layout.inset;
+  lv_coord_t slider_h = content_bottom - content_top;
   if (slider_h < 160) slider_h = layout.panel_h / 2;
+  lv_coord_t content_center_y = content_top + slider_h / 2 - layout.panel_h / 2;
   light_control_layout_power(
     ui.power_group, ui.power_on_btn, ui.power_off_btn, slider_w, slider_h, content_center_y);
   light_control_apply_modal_power(ctx);
@@ -802,11 +804,19 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
     ui.temp_slider, ui.temp_slider_handle, light_control_kelvin_to_pct(ctx, ctx->current_kelvin));
   if (ui.color_grid) {
     lv_coord_t grid_side = layout.panel_w - layout.inset * 3;
-    lv_coord_t max_grid_h = layout.panel_h - layout.inset * 4 - tab_frame_h - 24;
+    lv_coord_t color_safe_top = content_top;
+    if (!show_tab_bar) {
+      lv_coord_t chrome_safe_top = layout.back_inset_y + layout.back_size + layout.inset / 2;
+      if (color_safe_top < chrome_safe_top) color_safe_top = chrome_safe_top;
+    }
+    lv_coord_t max_grid_h = content_bottom - color_safe_top;
     if (grid_side > max_grid_h) grid_side = max_grid_h;
     if (grid_side < 180) grid_side = 180;
     lv_obj_set_size(ui.color_grid, grid_side, grid_side);
-    lv_obj_align(ui.color_grid, LV_ALIGN_CENTER, 0, content_center_y);
+    lv_coord_t color_center_y = content_center_y;
+    lv_coord_t color_top = layout.panel_h / 2 + color_center_y - grid_side / 2;
+    if (!show_tab_bar && color_top < color_safe_top) color_center_y += color_safe_top - color_top;
+    lv_obj_align(ui.color_grid, LV_ALIGN_CENTER, 0, color_center_y);
     lv_coord_t gap = 14;
     lv_coord_t swatch = (grid_side - gap * 3) / 4;
     for (uint32_t i = 0; i < 16; i++) {
@@ -1302,10 +1312,32 @@ enum class CoverControlTab : uint8_t {
   TILT = 2,
 };
 
+struct CoverControlVisibleTabs {
+  CoverControlTab tabs[3] = {
+    CoverControlTab::POSITION,
+    CoverControlTab::CONTROLS,
+    CoverControlTab::TILT,
+  };
+  uint8_t count = 0;
+
+  bool contains(CoverControlTab tab) const {
+    for (uint8_t i = 0; i < count; i++) {
+      if (tabs[i] == tab) return true;
+    }
+    return false;
+  }
+
+  void add(CoverControlTab tab) {
+    if (count >= 3 || contains(tab)) return;
+    tabs[count++] = tab;
+  }
+};
+
 struct CoverControlCtx {
   std::string entity_id;
   std::string label;
   std::string friendly_name;
+  std::string options;
   int current_position = 0;
   int current_tilt = 0;
   bool current_position_known = false;
@@ -1350,6 +1382,68 @@ struct CoverControlModalUi {
 inline CoverControlModalUi &cover_control_modal_ui() {
   static CoverControlModalUi ui;
   return ui;
+}
+
+inline bool cover_control_tab_from_token(const std::string &value, CoverControlTab &tab) {
+  if (value == "position") {
+    tab = CoverControlTab::POSITION;
+    return true;
+  }
+  if (value == "controls") {
+    tab = CoverControlTab::CONTROLS;
+    return true;
+  }
+  if (value == "tilt") {
+    tab = CoverControlTab::TILT;
+    return true;
+  }
+  return false;
+}
+
+inline CoverControlVisibleTabs cover_control_visible_tabs(CoverControlCtx *ctx) {
+  CoverControlVisibleTabs visible;
+  std::string value = cfg_option_value(ctx ? ctx->options : "", COVER_CONTROL_TABS_OPTION);
+  if (value.empty()) value = COVER_CONTROL_DEFAULT_TABS_VALUE;
+
+  size_t start = 0;
+  while (start <= value.size()) {
+    size_t end = value.find('|', start);
+    std::string token = value.substr(start, end == std::string::npos ? std::string::npos : end - start);
+    CoverControlTab tab = CoverControlTab::POSITION;
+    if (cover_control_tab_from_token(token, tab) &&
+        (tab != CoverControlTab::TILT || !ctx || ctx->supports_tilt)) {
+      visible.add(tab);
+    }
+    if (end == std::string::npos) break;
+    start = end + 1;
+  }
+  if (visible.count == 0) visible.add(CoverControlTab::POSITION);
+  return visible;
+}
+
+inline bool cover_control_tab_visible(CoverControlCtx *ctx, CoverControlTab tab) {
+  CoverControlVisibleTabs tabs = cover_control_visible_tabs(ctx);
+  return tabs.contains(tab);
+}
+
+inline CoverControlTab cover_control_first_visible_tab(CoverControlCtx *ctx) {
+  CoverControlVisibleTabs tabs = cover_control_visible_tabs(ctx);
+  return tabs.count == 0 ? CoverControlTab::POSITION : tabs.tabs[0];
+}
+
+inline void cover_control_ensure_visible_tab(CoverControlCtx *ctx) {
+  CoverControlModalUi &ui = cover_control_modal_ui();
+  if (cover_control_tab_visible(ctx, ui.tab)) return;
+  ui.tab = cover_control_first_visible_tab(ctx);
+}
+
+inline lv_obj_t *cover_control_tab_button(CoverControlModalUi &ui, CoverControlTab tab) {
+  switch (tab) {
+    case CoverControlTab::CONTROLS: return ui.controls_tab;
+    case CoverControlTab::POSITION: return ui.position_tab;
+    case CoverControlTab::TILT: return ui.tilt_tab;
+  }
+  return nullptr;
 }
 
 inline std::string cover_control_title(CoverControlCtx *ctx) {
@@ -1397,14 +1491,26 @@ inline void cover_control_apply_tab_visibility() {
   CoverControlModalUi &ui = cover_control_modal_ui();
   CoverControlCtx *ctx = ui.active;
   if (!ctx) return;
-  if (!ctx->supports_tilt && ui.tab == CoverControlTab::TILT) {
-    ui.tab = CoverControlTab::POSITION;
-  }
+  cover_control_ensure_visible_tab(ctx);
+  CoverControlVisibleTabs visible_tabs = cover_control_visible_tabs(ctx);
+  bool show_tab_bar = visible_tabs.count > 1;
   bool show_controls = ui.tab == CoverControlTab::CONTROLS;
   bool show_position = ui.tab == CoverControlTab::POSITION;
   bool show_tilt = ctx->supports_tilt && ui.tab == CoverControlTab::TILT;
+  if (ui.tab_row) {
+    if (show_tab_bar) lv_obj_clear_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.tab_row, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (ui.controls_tab) {
+    if (show_tab_bar && visible_tabs.contains(CoverControlTab::CONTROLS)) lv_obj_clear_flag(ui.controls_tab, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.controls_tab, LV_OBJ_FLAG_HIDDEN);
+  }
+  if (ui.position_tab) {
+    if (show_tab_bar && visible_tabs.contains(CoverControlTab::POSITION)) lv_obj_clear_flag(ui.position_tab, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(ui.position_tab, LV_OBJ_FLAG_HIDDEN);
+  }
   if (ui.tilt_tab) {
-    if (ctx->supports_tilt) lv_obj_clear_flag(ui.tilt_tab, LV_OBJ_FLAG_HIDDEN);
+    if (show_tab_bar && visible_tabs.contains(CoverControlTab::TILT)) lv_obj_clear_flag(ui.tilt_tab, LV_OBJ_FLAG_HIDDEN);
     else lv_obj_add_flag(ui.tilt_tab, LV_OBJ_FLAG_HIDDEN);
   }
   if (ui.controls_box) {
@@ -1620,12 +1726,14 @@ inline void cover_control_update_position_fill(int position_pct) {
 inline void cover_control_layout_modal(CoverControlCtx *ctx) {
   CoverControlModalUi &ui = cover_control_modal_ui();
   if (!ctx || !ui.panel) return;
-  if (!ctx->supports_tilt && ui.tab == CoverControlTab::TILT) {
-    ui.tab = CoverControlTab::POSITION;
-  }
+  cover_control_ensure_visible_tab(ctx);
+  CoverControlVisibleTabs visible_tabs = cover_control_visible_tabs(ctx);
   cover_control_apply_tab_visibility();
   ControlModalLayout layout = control_modal_calc_layout(ctx->width_compensation_percent);
 
+  int tab_count = static_cast<int>(visible_tabs.count);
+  if (tab_count < 1) tab_count = 1;
+  bool show_tab_bar = tab_count > 1;
   lv_coord_t tab_size = layout.back_size * 7 / 10;
   if (tab_size < 48) tab_size = 48;
   if (tab_size > 68) tab_size = 68;
@@ -1633,43 +1741,36 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
   lv_coord_t tab_frame_pad = tab_size / 5;
   lv_coord_t tab_frame_h = tab_size + tab_frame_pad * 2;
   lv_coord_t tab_gap = tab_size / 4;
-  int visible_tab_count = ctx->supports_tilt ? 3 : 2;
-  lv_coord_t tabs_total_w = tab_size * visible_tab_count + tab_gap * (visible_tab_count - 1);
+  lv_coord_t tabs_total_w = tab_size * tab_count + tab_gap * (tab_count - 1);
   lv_coord_t tab_frame_w = tabs_total_w + tab_frame_pad * 2;
   lv_coord_t max_tab_frame_w = layout.panel_w - layout.inset * 3;
   if (tab_frame_w > max_tab_frame_w) tab_frame_w = max_tab_frame_w;
-  if (ui.tab_row) {
+  if (ui.tab_row && show_tab_bar) {
     lv_obj_set_size(ui.tab_row, tab_frame_w, tab_frame_h);
     lv_obj_set_style_radius(ui.tab_row, tab_frame_h / 2, LV_PART_MAIN);
     lv_obj_align(ui.tab_row, LV_ALIGN_TOP_MID, 0, layout.inset + 2);
   }
-  struct CoverControlTabLayout {
-    lv_obj_t *btn;
-    CoverControlTab tab;
-  };
-  CoverControlTabLayout tabs[3] = {
-    {ui.position_tab, CoverControlTab::POSITION},
-    {ui.controls_tab, CoverControlTab::CONTROLS},
-    {ctx->supports_tilt ? ui.tilt_tab : nullptr, CoverControlTab::TILT},
-  };
   lv_coord_t first_tab_x = (tab_frame_w - tabs_total_w) / 2;
-  int visible_index = 0;
-  for (int i = 0; i < 3; i++) {
-    if (!tabs[i].btn) continue;
-    bool active = (tabs[i].tab == ui.tab);
+  for (int i = 0; show_tab_bar && i < tab_count; i++) {
+    lv_obj_t *tab_btn = cover_control_tab_button(ui, visible_tabs.tabs[i]);
+    if (!tab_btn) continue;
+    bool active = (visible_tabs.tabs[i] == ui.tab);
     lv_coord_t tab_btn_size = active ? selected_tab_size : tab_size;
-    lv_obj_set_size(tabs[i].btn, tab_btn_size, tab_btn_size);
-    lv_obj_set_style_radius(tabs[i].btn, tab_btn_size / 2, LV_PART_MAIN);
-    lv_coord_t tab_x = first_tab_x + visible_index * (tab_size + tab_gap);
-    lv_obj_align(tabs[i].btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
-    lv_obj_t *label = lv_obj_get_child(tabs[i].btn, 0);
+    lv_obj_set_size(tab_btn, tab_btn_size, tab_btn_size);
+    lv_obj_set_style_radius(tab_btn, tab_btn_size / 2, LV_PART_MAIN);
+    lv_coord_t tab_x = first_tab_x + i * (tab_size + tab_gap);
+    lv_obj_align(tab_btn, LV_ALIGN_LEFT_MID, tab_x - (tab_btn_size - tab_size) / 2, 0);
+    lv_obj_t *label = lv_obj_get_child(tab_btn, 0);
     if (label) lv_obj_align(label, LV_ALIGN_CENTER, tab_btn_size / 16, tab_btn_size / 16);
-    visible_index++;
   }
 
-  lv_coord_t content_center_y = tab_frame_h / 2 + 12;
-  lv_coord_t content_h = layout.panel_h - layout.inset * 3 - tab_frame_h - 16;
+  lv_coord_t content_top = show_tab_bar
+    ? layout.inset + tab_frame_h + 16
+    : layout.inset * 2;
+  lv_coord_t content_bottom = layout.panel_h - layout.inset;
+  lv_coord_t content_h = content_bottom - content_top;
   if (content_h < 160) content_h = layout.panel_h / 2;
+  lv_coord_t content_center_y = content_top + content_h / 2 - layout.panel_h / 2;
   lv_coord_t content_w = control_modal_home_card_width(ctx->btn, layout);
   cover_control_layout_slider(ui.position_slider, content_w, content_h, content_center_y);
   lv_obj_update_layout(ui.panel);
@@ -1702,6 +1803,7 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
       if (label) lv_obj_center(label);
     }
   }
+  lv_obj_move_foreground(ui.back_btn);
 }
 
 inline void cover_control_hide_modal() {
@@ -1801,7 +1903,7 @@ inline void cover_control_open_modal(CoverControlCtx *ctx) {
   ui.overlay = shell.overlay;
   ui.panel = shell.panel;
   ui.back_btn = shell.close_btn;
-  ui.tab = CoverControlTab::POSITION;
+  ui.tab = cover_control_first_visible_tab(ctx);
   if (!ui.panel) return;
 
   ui.tab_row = lv_obj_create(ui.panel);
@@ -1942,6 +2044,7 @@ inline CoverControlCtx *create_cover_control_context(
   CoverControlCtx *ctx = new CoverControlCtx();
   ctx->entity_id = p.entity;
   ctx->label = p.label;
+  ctx->options = p.options;
   ctx->accent_color = accent_color;
   ctx->secondary_color = secondary_color;
   ctx->btn = s.btn;

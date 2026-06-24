@@ -10,6 +10,12 @@
     "precision",
     "options"
   ],
+  "optionNames": [
+    "state_low_label",
+    "state_high_label",
+    "image_refresh",
+    "image_refresh_mode"
+  ],
   "cards": {
     "": {
       "label": "Switch",
@@ -412,6 +418,12 @@
           "min": 0,
           "max": 100,
           "step": 1
+        },
+        {
+          "name": "cover_tabs",
+          "label": "Visible Tabs",
+          "kind": "text",
+          "defaultValue": "position|controls|tilt"
         }
       ],
       "behavior": {

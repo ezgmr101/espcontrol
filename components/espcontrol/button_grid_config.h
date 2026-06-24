@@ -87,24 +87,26 @@ constexpr uint32_t DARK_TRACK_BACKGROUND = correct_display_color(0x2F2F2F);
 constexpr int MAX_GRID_SLOTS = ESPCONTROL_MAX_GRID_SLOTS;
 static_assert(MAX_GRID_SLOTS > 0, "ESPCONTROL_MAX_GRID_SLOTS must be positive");
 constexpr int MAX_SUBPAGE_ITEMS = MAX_GRID_SLOTS * MAX_GRID_SLOTS;
-constexpr const char *SENSOR_STATE_LABELS_OPTION = "state_labels";
-constexpr const char *SENSOR_STATE_INPUT_OPTION = "state_input";
-constexpr const char *SENSOR_STATE_OUTPUT_OPTION = "state_output";
-constexpr const char *SENSOR_STATE_INPUT_2_OPTION = "state_input_2";
-constexpr const char *SENSOR_STATE_OUTPUT_2_OPTION = "state_output_2";
-constexpr const char *SENSOR_STATE_LOW_LABEL_OPTION = "state_low_label";
-constexpr const char *SENSOR_STATE_HIGH_LABEL_OPTION = "state_high_label";
-constexpr const char *IMAGE_LABEL_OPTION = "image_label";
-constexpr const char *IMAGE_ICON_OPTION = "image_icon";
-constexpr const char *IMAGE_MODAL_MODE_OPTION = "image_modal_mode";
-constexpr const char *IMAGE_REFRESH_OPTION = "image_refresh";
-constexpr const char *IMAGE_REFRESH_MODE_OPTION = "image_refresh_mode";
-constexpr const char *LIGHT_CONTROL_TABS_OPTION = "light_tabs";
-constexpr const char *LIGHT_CONTROL_DEFAULT_TABS_VALUE = "power|brightness|temperature|color";
-
 #include "button_grid_contract_generated.h"
 #include "button_grid_card_runtime.h"
 #include <cstdlib>
+
+constexpr const char *SENSOR_STATE_LABELS_OPTION = card_runtime_option_name_state_labels();
+constexpr const char *SENSOR_STATE_INPUT_OPTION = card_runtime_option_name_state_input();
+constexpr const char *SENSOR_STATE_OUTPUT_OPTION = card_runtime_option_name_state_output();
+constexpr const char *SENSOR_STATE_INPUT_2_OPTION = card_runtime_option_name_state_input_2();
+constexpr const char *SENSOR_STATE_OUTPUT_2_OPTION = card_runtime_option_name_state_output_2();
+constexpr const char *SENSOR_STATE_LOW_LABEL_OPTION = card_runtime_option_name_state_low_label();
+constexpr const char *SENSOR_STATE_HIGH_LABEL_OPTION = card_runtime_option_name_state_high_label();
+constexpr const char *IMAGE_LABEL_OPTION = card_runtime_option_name_image_label();
+constexpr const char *IMAGE_ICON_OPTION = card_runtime_option_name_image_icon();
+constexpr const char *IMAGE_MODAL_MODE_OPTION = card_runtime_option_name_image_modal_mode();
+constexpr const char *IMAGE_REFRESH_OPTION = card_runtime_option_name_image_refresh();
+constexpr const char *IMAGE_REFRESH_MODE_OPTION = card_runtime_option_name_image_refresh_mode();
+constexpr const char *LIGHT_CONTROL_TABS_OPTION = "light_tabs";
+constexpr const char *LIGHT_CONTROL_DEFAULT_TABS_VALUE = "power|brightness|temperature|color";
+constexpr const char *COVER_CONTROL_TABS_OPTION = "cover_tabs";
+constexpr const char *COVER_CONTROL_DEFAULT_TABS_VALUE = "position|controls|tilt";
 
 inline int bounded_grid_slots(int num_slots) {
   if (num_slots < 0) return 0;
@@ -481,6 +483,38 @@ inline std::string light_control_card_options_normalized(const std::string &opti
     cfg_option_value(options, LIGHT_CONTROL_TABS_OPTION));
   if (tabs == LIGHT_CONTROL_DEFAULT_TABS_VALUE) return "";
   return std::string(LIGHT_CONTROL_TABS_OPTION) + "=" + encode_compact_field(tabs);
+}
+
+inline bool cover_control_tab_token_valid(const std::string &value) {
+  return value == "position" || value == "controls" || value == "tilt";
+}
+
+inline std::string normalize_cover_control_tabs_value(const std::string &value) {
+  std::vector<std::string> parts = split_config_fields(
+    value.empty() ? std::string(COVER_CONTROL_DEFAULT_TABS_VALUE) : value, '|');
+  std::vector<std::string> tabs;
+  for (const auto &part : parts) {
+    if (!cover_control_tab_token_valid(part)) continue;
+    if (std::find(tabs.begin(), tabs.end(), part) == tabs.end()) {
+      tabs.push_back(part);
+    }
+  }
+  if (tabs.empty()) tabs.push_back("position");
+  std::string out;
+  for (const auto &tab : tabs) {
+    if (!out.empty()) out += "|";
+    out += tab;
+  }
+  return out;
+}
+
+inline std::string cover_card_options_normalized(const std::string &options,
+                                                 const std::string &mode) {
+  if (!card_runtime_cover_modal_mode(mode)) return "";
+  std::string tabs = normalize_cover_control_tabs_value(
+    cfg_option_value(options, COVER_CONTROL_TABS_OPTION));
+  if (tabs == COVER_CONTROL_DEFAULT_TABS_VALUE) return "";
+  return std::string(COVER_CONTROL_TABS_OPTION) + "=" + encode_compact_field(tabs);
 }
 
 inline uint32_t image_card_refresh_interval_ms(const ParsedCfg &p) {
@@ -951,6 +985,12 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (!p.sensor.empty()) p.icon_on.clear();
     p.options = garage_card_options_normalized(p.options, p.sensor);
   }
+  if (p.type == "cover") {
+    if (!card_runtime_cover_mode_valid(p.sensor)) p.sensor.clear();
+    p.precision.clear();
+    if (p.sensor != "set_position") p.unit.clear();
+    p.options = cover_card_options_normalized(p.options, p.sensor);
+  }
   if (p.type == "alarm") {
     p.sensor.clear();
     p.unit.clear();
@@ -1102,7 +1142,7 @@ inline ParsedCfg normalize_parsed_cfg(ParsedCfg p) {
     if (p.icon_on.empty() || p.icon_on == "Auto") p.icon_on = "Motion Sensor";
     p.options = presence_card_options_normalized(p.options);
   }
-  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && p.type != "climate" && p.type != "garage" && p.type != "webhook" && p.type != "screen_lock" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && p.type != "presence" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "light_control" && p.type != "vacuum" && p.type != "lawn_mower" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
+  if (!p.type.empty() && p.type != "action" && p.type != "alarm" && p.type != "alarm_action" && p.type != "climate" && p.type != "cover" && p.type != "garage" && p.type != "webhook" && p.type != "screen_lock" && p.type != "todo" && p.type != "sensor" && p.type != "door_window" && p.type != "presence" && p.type != "media" && p.type != "subpage" && p.type != "image" && p.type != "light_control" && p.type != "vacuum" && p.type != "lawn_mower" && !fan_card_type(p.type) && !card_large_numbers_supported(p)) {
     p.options.clear();
   }
   if (sensor_card_local_sensor(p)) {
@@ -2805,7 +2845,8 @@ inline void send_internal_relay_action(const ParsedCfg &p) {
 
 inline std::string garage_state_label(const std::string &state) {
   if (state.empty()) return "--";
-  return sentence_cap_text(state);
+  if (state == "open") return espcontrol_i18n_key("state_open");
+  return espcontrol_i18n(sentence_cap_text(state));
 }
 
 inline bool garage_state_is_active(const std::string &state) {

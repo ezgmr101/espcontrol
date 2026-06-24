@@ -51,6 +51,10 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
     coverModeOptionValues: coverModeOptionValues,
     normalizeCoverMode: normalizeCoverMode,
     normalizeCoverPosition: normalizeCoverPosition,
+    coverControlTabDefinitions: coverControlTabDefinitions,
+    coverControlTabs: coverControlTabs,
+    normalizeCoverControlTabs: normalizeCoverControlTabs,
+    normalizeCoverOptions: normalizeCoverOptions,
     lightTempDefaultRange: lightTempDefaultRange,
     lightTempParseRange: lightTempParseRange,
     lightTempClampMin: lightTempClampMin,
@@ -480,6 +484,25 @@ if (typeof globalThis !== "undefined" && globalThis.__ESPCONTROL_TEST_HOOKS__) {
       state.firmwareVersionOptions = oldOptions;
       state.firmwareSelectedVersion = oldSelected;
       state.firmwareVersionIndexLoaded = oldIndexLoaded;
+      return result;
+    },
+    firmwareFailureStatusFor: function (message) {
+      var oldError = state.firmwareInstallError;
+      var oldStatus = state.firmwareInstallStatus;
+      var oldUpdateState = state.firmwareUpdateState;
+      var oldTarget = state.firmwareInstallTargetVersion;
+      var oldPostPending = state.firmwareInstallPostPending;
+      failPublicFirmwareUpload(message);
+      var result = {
+        error: state.firmwareInstallError,
+        updateState: state.firmwareUpdateState,
+        installStatus: state.firmwareInstallStatus,
+      };
+      state.firmwareInstallError = oldError;
+      state.firmwareInstallStatus = oldStatus;
+      state.firmwareUpdateState = oldUpdateState;
+      state.firmwareInstallTargetVersion = oldTarget;
+      state.firmwareInstallPostPending = oldPostPending;
       return result;
     },
     findDuplicatePlacementFor: function (grid, start, size, maxSlots) {
