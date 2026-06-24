@@ -722,6 +722,7 @@ inline void grid_refresh_layout(
         s.text_lbl, static_cast<VacuumCardCtx *>(lv_obj_get_user_data(s.btn)), p);
     }
   }
+  refresh_subpage_vacuum_card_translated_text();
   ESP_LOGI("sensors", "Grid refresh: layout done (%lu ms)", esphome::millis());
 }
 
@@ -873,6 +874,7 @@ inline void grid_phase2(
   reset_ha_control_availability_refs();
   clear_internal_relay_watchers();
   navigation_clear_subpages();
+  clear_subpage_vacuum_card_text_refs();
   reset_image_card_pool(cfg);
 
   bool has_on, has_off, has_sensor_color;
@@ -1749,6 +1751,7 @@ inline void grid_phase2(
       if (sb_cfg.type == "vacuum") {
         if (!sb_cfg.entity.empty()) {
           VacuumCardCtx *ctx = create_vacuum_card_context(sub_slot, sb_cfg);
+          register_subpage_vacuum_card_text(sub_slot.text_lbl, ctx, sb_cfg);
           if (vacuum_card_mode_needs_state(sb_cfg.sensor)) {
             subscribe_vacuum_card_state(ctx);
           } else {

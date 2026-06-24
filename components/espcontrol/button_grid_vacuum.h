@@ -14,6 +14,21 @@ struct VacuumCardCtx {
   bool status_card = false;
 };
 
+struct VacuumCardTextRef {
+  lv_obj_t *text_lbl = nullptr;
+  VacuumCardCtx *ctx = nullptr;
+  ParsedCfg cfg;
+};
+
+inline std::vector<VacuumCardTextRef> &subpage_vacuum_card_text_refs() {
+  static std::vector<VacuumCardTextRef> refs;
+  return refs;
+}
+
+inline void clear_subpage_vacuum_card_text_refs() {
+  subpage_vacuum_card_text_refs().clear();
+}
+
 inline std::string vacuum_card_mode(const std::string &mode) {
   return card_runtime_vacuum_mode(mode);
 }
@@ -136,6 +151,19 @@ inline void refresh_vacuum_card_translated_text(lv_obj_t *text_lbl,
     label = ctx->label;
   }
   set_wrapped_button_label_text(text_lbl, label);
+}
+
+inline void register_subpage_vacuum_card_text(lv_obj_t *text_lbl,
+                                              VacuumCardCtx *ctx,
+                                              const ParsedCfg &p) {
+  if (!text_lbl) return;
+  subpage_vacuum_card_text_refs().push_back({text_lbl, ctx, p});
+}
+
+inline void refresh_subpage_vacuum_card_translated_text() {
+  for (auto &ref : subpage_vacuum_card_text_refs()) {
+    refresh_vacuum_card_translated_text(ref.text_lbl, ref.ctx, ref.cfg);
+  }
 }
 
 inline void subscribe_vacuum_card_state(VacuumCardCtx *ctx) {
