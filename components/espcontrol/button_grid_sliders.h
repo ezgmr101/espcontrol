@@ -502,7 +502,7 @@ inline lv_coord_t control_modal_control_tab_size(const ControlModalLayout &layou
   return size;
 }
 
-inline lv_coord_t light_control_tab_size(const ControlModalLayout &layout) {
+inline lv_coord_t control_modal_card_tab_size(const ControlModalLayout &layout) {
   if (control_modal_uses_jc1060p470_tuning(layout))
     return control_modal_scaled_px(54, layout.short_side);
   return control_modal_control_tab_size(layout);
@@ -525,7 +525,7 @@ inline lv_coord_t control_modal_control_tab_content_gap(const ControlModalLayout
   return gap;
 }
 
-inline lv_coord_t light_control_tab_content_gap(const ControlModalLayout &layout) {
+inline lv_coord_t control_modal_card_tab_content_gap(const ControlModalLayout &layout) {
   if (control_modal_uses_jc1060p470_tuning(layout))
     return control_modal_scaled_px(28, layout.short_side);
   return control_modal_control_tab_content_gap(layout);
@@ -807,7 +807,7 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
   int tab_count = static_cast<int>(visible_tabs.count);
   if (tab_count < 1) tab_count = 1;
   bool show_tab_bar = tab_count > 1;
-  lv_coord_t tab_size = light_control_tab_size(layout);
+  lv_coord_t tab_size = control_modal_card_tab_size(layout);
   lv_coord_t selected_tab_size = tab_size + tab_size / 8;
   lv_coord_t tab_frame_pad = tab_size / 5;
   lv_coord_t tab_gap = control_modal_control_tab_gap(layout, tab_size);
@@ -853,7 +853,7 @@ inline void light_control_layout_modal(LightControlCtx *ctx) {
   }
 
   lv_coord_t content_top = show_tab_bar
-    ? layout.inset + tab_frame_h + light_control_tab_content_gap(layout)
+    ? layout.inset + tab_frame_h + control_modal_card_tab_content_gap(layout)
     : layout.inset * 2;
   lv_coord_t content_bottom = layout.panel_h - layout.inset;
   lv_coord_t slider_h = content_bottom - content_top;
@@ -1877,7 +1877,7 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
   int tab_count = static_cast<int>(visible_tabs.count);
   if (tab_count < 1) tab_count = 1;
   bool show_tab_bar = tab_count > 1;
-  lv_coord_t tab_size = control_modal_control_tab_size(layout);
+  lv_coord_t tab_size = control_modal_card_tab_size(layout);
   lv_coord_t selected_tab_size = tab_size + tab_size / 8;
   lv_coord_t tab_frame_pad = tab_size / 5;
   lv_coord_t tab_frame_h = tab_size + tab_frame_pad * 2;
@@ -1906,7 +1906,7 @@ inline void cover_control_layout_modal(CoverControlCtx *ctx) {
   }
 
   lv_coord_t content_top = show_tab_bar
-    ? layout.inset + tab_frame_h + control_modal_control_tab_content_gap(layout)
+    ? layout.inset + tab_frame_h + control_modal_card_tab_content_gap(layout)
     : layout.inset * 2;
   lv_coord_t content_bottom = layout.panel_h - layout.inset;
   lv_coord_t content_h = content_bottom - content_top;
