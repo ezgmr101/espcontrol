@@ -177,6 +177,7 @@ script:
                 condition:
                   lambda: |-
                     return id(cover_art_screensaver_active) ||
+                           alarm_arming_takeover_active() ||
                            (id(media_player_sleep_prevention_enabled).state &&
                             id(media_player_playing));
                 then:
@@ -207,7 +208,10 @@ script:
                   - globals.set:
                       id: screensaver_sensor_sleep_pending
                       value: 'false'
-                  - lambda: 'navigation_return_home(id(main_page)->obj);'
+                  - lambda: |-
+                      if (!alarm_arming_takeover_active()) {
+                        navigation_return_home(id(main_page)->obj);
+                      }
                   - if:
                       condition:
                         lambda: |-
@@ -482,7 +486,7 @@ script:
       - lambda: 'backlight_close_modals_for_display_takeover();'
       - if:
           condition:
-            lambda: 'return !id(display_takeover_suspended) || id(screen_schedule_asleep);'
+            lambda: 'return !alarm_arming_takeover_active() && (!id(display_takeover_suspended) || id(screen_schedule_asleep));'
           then:
             - script.execute: backlight_force_display_off
             - lvgl.resume:
@@ -567,7 +571,9 @@ script:
                 if (std::isnan(val) || val <= 0) val = 60;
                 return (int)(val * 1000);
             - lambda: |-
-                navigation_return_home(id(main_page)->obj);
+                if (!alarm_arming_takeover_active()) {
+                  navigation_return_home(id(main_page)->obj);
+                }
 
   # Wake from screensaver
   - id: screensaver_wake
@@ -705,7 +711,8 @@ script:
             lambda: |-
               return id(media_player_sleep_prevention_enabled).state &&
                      id(cover_art_media_playing) &&
-                     id(cover_art_screensaver_enabled).state;
+                     id(cover_art_screensaver_enabled).state &&
+                     !alarm_arming_takeover_active();
           then:
             - script.execute: cover_art_delay_timer
 

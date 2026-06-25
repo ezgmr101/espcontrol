@@ -25,6 +25,8 @@ struct AlarmCardCtx {
   lv_obj_t *page = nullptr;
   TransientStatusLabel *status_label = nullptr;
   lv_timer_t *pending_action_timer = nullptr;
+  std::function<void()> suspend_display_takeover;
+  std::function<void()> resume_display_takeover;
   uint32_t arm_delay_started_ms = 0;
   int arm_delay_seconds = -1;
   int arm_delay_total_seconds = -1;
@@ -42,6 +44,8 @@ struct AlarmCardCtx {
   bool show_status_icon = false;
   bool show_status_label = false;
   bool pending_action_had_code = false;
+  bool display_takeover_suspended = false;
+  bool arming_modal_auto_opened = false;
 };
 
 struct AlarmActionCtx {
@@ -338,6 +342,14 @@ inline std::string alarm_control_button_label_for_state(const std::string &mode,
 }
 
 inline void alarm_control_update_modal(AlarmCardCtx *ctx);
+inline void alarm_control_open_modal(AlarmCardCtx *ctx);
+inline void alarm_control_hide_modal();
+inline void alarm_refresh_arming_takeover(AlarmCardCtx *ctx);
+
+inline AlarmCardCtx *&alarm_arming_takeover_ctx() {
+  static AlarmCardCtx *ctx = nullptr;
+  return ctx;
+}
 
 inline int alarm_parse_delay_seconds(const std::string &value) {
   if (value.empty()) return -1;
@@ -418,6 +430,7 @@ inline void alarm_arm_delay_timer_cb(lv_timer_t *timer) {
   if (!ctx) return;
   alarm_control_update_modal(ctx);
   if (!alarm_state_is_delay(ctx->state) || alarm_remaining_delay_seconds(ctx) <= 0) {
+    alarm_refresh_arming_takeover(ctx);
     lv_timer_pause(timer);
   }
 }
@@ -439,6 +452,53 @@ inline void alarm_arm_delay_refresh_timer(AlarmCardCtx *ctx) {
 
 inline bool alarm_control_modal_shows_arming(AlarmCardCtx *ctx) {
   return ctx && alarm_state_is_delay(ctx->state);
+}
+
+inline bool alarm_arming_takeover_active() {
+  AlarmCardCtx *ctx = alarm_arming_takeover_ctx();
+  return ctx && alarm_card_context_valid(ctx) && alarm_state_is_delay(ctx->state) &&
+         alarm_remaining_delay_seconds(ctx) > 0;
+}
+
+inline void alarm_release_arming_takeover(AlarmCardCtx *ctx) {
+  if (!ctx) return;
+  if (alarm_arming_takeover_ctx() == ctx) alarm_arming_takeover_ctx() = nullptr;
+  if (ctx->display_takeover_suspended) {
+    ctx->display_takeover_suspended = false;
+    if (ctx->resume_display_takeover) ctx->resume_display_takeover();
+  }
+  AlarmControlModalUi &ui = alarm_control_modal_ui();
+  if (ctx->arming_modal_auto_opened && ui.active == ctx) {
+    alarm_control_hide_modal();
+  }
+  ctx->arming_modal_auto_opened = false;
+}
+
+inline void alarm_refresh_arming_takeover(AlarmCardCtx *ctx) {
+  bool should_take_over = ctx && alarm_card_context_valid(ctx) && ctx->available &&
+                          alarm_state_is_delay(ctx->state) &&
+                          alarm_remaining_delay_seconds(ctx) > 0;
+  if (!should_take_over) {
+    alarm_release_arming_takeover(ctx);
+    return;
+  }
+
+  AlarmCardCtx *active = alarm_arming_takeover_ctx();
+  if (active && active != ctx) alarm_release_arming_takeover(active);
+  alarm_arming_takeover_ctx() = ctx;
+
+  if (!ctx->display_takeover_suspended) {
+    ctx->display_takeover_suspended = true;
+    if (ctx->suspend_display_takeover) ctx->suspend_display_takeover();
+  }
+
+  AlarmControlModalUi &ui = alarm_control_modal_ui();
+  if (ui.active != ctx || !ui.overlay) {
+    alarm_control_open_modal(ctx);
+    ctx->arming_modal_auto_opened = true;
+  } else {
+    lv_obj_move_foreground(ui.overlay);
+  }
 }
 
 inline void alarm_control_set_hidden(lv_obj_t *obj, bool hidden) {
@@ -501,6 +561,7 @@ inline void alarm_apply_home_state(AlarmCardCtx *ctx, const std::string &state) 
   alarm_clear_pending_action_if_progressed(ctx);
   alarm_control_update_modal(ctx);
   alarm_arm_delay_refresh_timer(ctx);
+  alarm_refresh_arming_takeover(ctx);
 }
 
 inline void alarm_apply_home_arm_mode(AlarmCardCtx *ctx, const std::string &arm_mode) {
@@ -523,6 +584,7 @@ inline void alarm_apply_home_arm_delay(AlarmCardCtx *ctx, const std::string &del
   ctx->arm_delay_started_ms = lv_tick_get();
   alarm_control_update_modal(ctx);
   alarm_arm_delay_refresh_timer(ctx);
+  alarm_refresh_arming_takeover(ctx);
 }
 
 inline void subscribe_alarm_state(AlarmCardCtx *ctx) {
@@ -564,6 +626,9 @@ inline void alarm_apply_action_state(AlarmCardCtx *ctx, const std::string &mode,
   bool active = !unavailable && alarm_action_state_matches(mode, state, ctx->arm_mode);
   set_card_checked_state(ctx->btn, active);
   alarm_clear_pending_action_if_progressed(ctx);
+  alarm_control_update_modal(ctx);
+  alarm_arm_delay_refresh_timer(ctx);
+  alarm_refresh_arming_takeover(ctx);
 }
 
 inline void alarm_apply_action_arm_mode(AlarmCardCtx *ctx, const std::string &mode,
@@ -574,6 +639,8 @@ inline void alarm_apply_action_arm_mode(AlarmCardCtx *ctx, const std::string &mo
   bool active = !unavailable && alarm_action_state_matches(mode, ctx->state, ctx->arm_mode);
   set_card_checked_state(ctx->btn, active);
   alarm_clear_pending_action_if_progressed(ctx);
+  alarm_control_update_modal(ctx);
+  alarm_refresh_arming_takeover(ctx);
 }
 
 inline void subscribe_alarm_action_availability(AlarmCardCtx *ctx) {
@@ -602,6 +669,12 @@ inline void subscribe_alarm_action_state(AlarmCardCtx *ctx, const std::string &m
     ctx->entity_id, std::string("arm_mode"),
     std::function<void(esphome::StringRef)>([ctx, mode](esphome::StringRef arm_mode) {
       alarm_apply_action_arm_mode(ctx, mode, string_ref_limited(arm_mode, HA_SHORT_STATE_MAX_LEN));
+    })
+  );
+  ha_subscribe_attribute(
+    ctx->entity_id, std::string("delay"),
+    std::function<void(esphome::StringRef)>([ctx](esphome::StringRef delay) {
+      alarm_apply_home_arm_delay(ctx, string_ref_limited(delay, HA_SHORT_STATE_MAX_LEN));
     })
   );
 }
@@ -1365,7 +1438,9 @@ inline AlarmCardCtx *create_alarm_card_context(
     const lv_font_t *label_font,
     lv_color_t text_color,
     int width_compensation_percent,
-    bool build_default_page = false) {
+    bool build_default_page = false,
+    std::function<void()> suspend_display_takeover = nullptr,
+    std::function<void()> resume_display_takeover = nullptr) {
   AlarmCardCtx *ctx = new AlarmCardCtx();
   ctx->entity_id = p.entity;
   ctx->label = p.label.empty() ? espcontrol_i18n(std::string("Alarm")) : p.label;
@@ -1384,6 +1459,8 @@ inline AlarmCardCtx *create_alarm_card_context(
   ctx->tertiary_color = tertiary_color;
   ctx->width_compensation_percent = width_compensation_percent;
   ctx->grid_cols = cols > 0 ? cols : 1;
+  ctx->suspend_display_takeover = suspend_display_takeover;
+  ctx->resume_display_takeover = resume_display_takeover;
   ctx->status_label = create_transient_status_label(
     slot.text_lbl, ctx->show_status_label ? "--" : ctx->label);
   alarm_set_card_state_colors(ctx, ctx->on_color);
