@@ -1219,6 +1219,8 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
   lv_obj_clear_flag(ui.arming_view, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_add_flag(ui.arming_view, LV_OBJ_FLAG_HIDDEN);
 
+  uint32_t primary_color = alarm_control_active_color(ctx, "");
+  uint32_t primary_text_color = readable_text_color_for_bg(primary_color);
   bool jc4880p443_layout = control_modal_uses_compact_portrait_tuning(layout);
   lv_coord_t status_center_y = -control_modal_scaled_px(64, layout.short_side);
   lv_coord_t countdown_gap = control_modal_scaled_px(28, layout.short_side);
@@ -1231,7 +1233,7 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
 
   ui.arming_title = lv_label_create(ui.arming_view);
   lv_label_set_text(ui.arming_title, espcontrol_i18n("Arming"));
-  lv_obj_set_style_text_color(ui.arming_title, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
+  lv_obj_set_style_text_color(ui.arming_title, lv_color_hex(primary_color), LV_PART_MAIN);
   lv_obj_set_style_text_align(ui.arming_title, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
   if (title_font) lv_obj_set_style_text_font(ui.arming_title, title_font, LV_PART_MAIN);
   apply_width_compensation(ui.arming_title, ctx ? ctx->width_compensation_percent : 100);
@@ -1242,7 +1244,7 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
 
   ui.arming_countdown = lv_label_create(ui.arming_view);
   lv_label_set_text(ui.arming_countdown, "");
-  lv_obj_set_style_text_color(ui.arming_countdown, lv_color_hex(DARK_TEXT_MUTED), LV_PART_MAIN);
+  lv_obj_set_style_text_color(ui.arming_countdown, lv_color_hex(primary_color), LV_PART_MAIN);
   lv_obj_set_style_text_align(ui.arming_countdown, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
   if (countdown_font) lv_obj_set_style_text_font(ui.arming_countdown, countdown_font, LV_PART_MAIN);
   apply_width_compensation(ui.arming_countdown, ctx ? ctx->width_compensation_percent : 100);
@@ -1267,8 +1269,8 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
 
   ui.arming_progress = lv_obj_create(ui.arming_view);
   lv_obj_set_size(ui.arming_progress, progress_w, progress_h);
-  lv_obj_set_style_bg_color(ui.arming_progress, lv_color_hex(DARK_BACKGROUND_SECONDARY), LV_PART_MAIN);
-  lv_obj_set_style_bg_opa(ui.arming_progress, LV_OPA_COVER, LV_PART_MAIN);
+  lv_obj_set_style_bg_color(ui.arming_progress, lv_color_hex(primary_color), LV_PART_MAIN);
+  lv_obj_set_style_bg_opa(ui.arming_progress, LV_OPA_50, LV_PART_MAIN);
   lv_obj_set_style_border_width(ui.arming_progress, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(ui.arming_progress, 0, LV_PART_MAIN);
   lv_obj_set_style_pad_all(ui.arming_progress, 0, LV_PART_MAIN);
@@ -1280,8 +1282,7 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
 
   ui.arming_progress_fill = lv_obj_create(ui.arming_progress);
   lv_obj_set_size(ui.arming_progress_fill, 0, progress_h);
-  lv_obj_set_style_bg_color(ui.arming_progress_fill,
-    lv_color_hex(ctx ? ctx->on_color : DEFAULT_SLIDER_COLOR), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(ui.arming_progress_fill, lv_color_hex(primary_color), LV_PART_MAIN);
   lv_obj_set_style_bg_opa(ui.arming_progress_fill, LV_OPA_COVER, LV_PART_MAIN);
   lv_obj_set_style_border_width(ui.arming_progress_fill, 0, LV_PART_MAIN);
   lv_obj_set_style_shadow_width(ui.arming_progress_fill, 0, LV_PART_MAIN);
@@ -1297,14 +1298,14 @@ inline void alarm_control_create_arming_view(AlarmControlModalUi &ui,
   if (disarm_h > layout.panel_h / 8) disarm_h = layout.panel_h / 8;
   ui.arming_disarm_btn = control_modal_create_round_button(
     ui.arming_view, disarm_h, espcontrol_i18n("Disarm"), label_font,
-    ctx ? ctx->on_color : DEFAULT_SLIDER_COLOR,
-    ctx ? ctx->on_color : DEFAULT_SLIDER_COLOR,
+    primary_color,
+    primary_color,
     ctx ? ctx->width_compensation_percent : 100);
   lv_obj_set_style_radius(ui.arming_disarm_btn, disarm_h / 2, LV_PART_MAIN);
   lv_obj_set_style_border_width(ui.arming_disarm_btn, 0, LV_PART_MAIN);
   ui.arming_disarm_label = lv_obj_get_child(ui.arming_disarm_btn, 0);
   if (ui.arming_disarm_label) {
-    lv_obj_set_style_text_color(ui.arming_disarm_label, lv_color_hex(DARK_TEXT_PRIMARY), LV_PART_MAIN);
+    lv_obj_set_style_text_color(ui.arming_disarm_label, lv_color_hex(primary_text_color), LV_PART_MAIN);
     lv_obj_update_layout(ui.arming_disarm_label);
     lv_coord_t disarm_w = lv_obj_get_width(ui.arming_disarm_label) + disarm_h + disarm_extra_padding;
     lv_coord_t max_disarm_w = layout.panel_w - layout.inset * 2;
