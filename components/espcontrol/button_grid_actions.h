@@ -68,10 +68,15 @@ inline bool action_card_parse_script_field(const std::string &line,
   return action_card_script_field_name_valid(key) && !value.empty();
 }
 
-inline size_t action_card_script_field_count(const std::string &options) {
+struct ActionCardScriptField {
+  std::string key;
+  std::string value;
+};
+
+inline std::vector<ActionCardScriptField> action_card_script_fields(const std::string &options) {
+  std::vector<ActionCardScriptField> out;
   std::string fields = cfg_option_value(options, "script_fields");
-  if (fields.empty()) return 0;
-  size_t count = 0;
+  if (fields.empty()) return out;
   size_t start = 0;
   while (start <= fields.size()) {
     size_t end = fields.find('\n', start);
@@ -79,49 +84,28 @@ inline size_t action_card_script_field_count(const std::string &options) {
     std::string key;
     std::string value;
     if (action_card_parse_script_field(fields.substr(start, end - start), key, value)) {
-      count++;
+      out.push_back({key, value});
     }
     start = end + 1;
   }
-  return count;
+  return out;
 }
 
-inline std::string action_card_script_fields_template(const std::string &options) {
-  std::string fields = cfg_option_value(options, "script_fields");
+inline std::string action_card_script_fields_template(const std::vector<ActionCardScriptField> &fields) {
   if (fields.empty()) return "";
   std::string out = "{{ dict(";
-  bool first = true;
-  size_t start = 0;
-  while (start <= fields.size()) {
-    size_t end = fields.find('\n', start);
-    if (end == std::string::npos) end = fields.size();
-    std::string key;
-    std::string value;
-    if (action_card_parse_script_field(fields.substr(start, end - start), key, value)) {
-      if (!first) out += ", ";
-      out += key + "=" + key;
-      first = false;
-    }
-    start = end + 1;
+  for (size_t i = 0; i < fields.size(); i++) {
+    if (i > 0) out += ", ";
+    out += fields[i].key + "=" + fields[i].key;
   }
   out += ") }}";
-  return first ? std::string() : out;
+  return out;
 }
 
 inline void action_card_add_script_field_variables(esphome::api::HomeassistantActionRequest &req,
-                                                   const std::string &options) {
-  std::string fields = cfg_option_value(options, "script_fields");
-  if (fields.empty()) return;
-  size_t start = 0;
-  while (start <= fields.size()) {
-    size_t end = fields.find('\n', start);
-    if (end == std::string::npos) end = fields.size();
-    std::string key;
-    std::string value;
-    if (action_card_parse_script_field(fields.substr(start, end - start), key, value)) {
-      ha_action_add_variable(req, key.c_str(), value.c_str());
-    }
-    start = end + 1;
+                                                   const std::vector<ActionCardScriptField> &fields) {
+  for (const auto &field : fields) {
+    ha_action_add_variable(req, field.key.c_str(), field.value.c_str());
   }
 }
 
@@ -149,18 +133,18 @@ inline void send_action_card_action(const ParsedCfg &p) {
   if (action_card_option_select(p)) return;
   const char *value_key = action_card_value_key(p.sensor);
   if (value_key && p.unit.empty()) return;
-  const size_t script_field_count = p.sensor == "script.turn_on"
-    ? action_card_script_field_count(p.options)
-    : 0;
+  std::vector<ActionCardScriptField> script_fields = p.sensor == "script.turn_on"
+    ? action_card_script_fields(p.options)
+    : std::vector<ActionCardScriptField>();
 
   esphome::api::HomeassistantActionRequest req;
   if (!ha_action_begin(req, p.sensor.c_str(), false, 1 + (value_key ? 1 : 0))) return;
   std::string script_fields_template;
-  if (script_field_count > 0) {
-    script_fields_template = action_card_script_fields_template(p.options);
+  if (!script_fields.empty()) {
+    script_fields_template = action_card_script_fields_template(script_fields);
     if (!script_fields_template.empty()) {
       req.data_template.init(1);
-      req.variables.init(script_field_count);
+      req.variables.init(script_fields.size());
     }
   }
   ha_action_add_entity(req, p.entity);
@@ -169,7 +153,7 @@ inline void send_action_card_action(const ParsedCfg &p) {
   }
   if (!script_fields_template.empty()) {
     ha_action_add_data_template(req, "variables", script_fields_template.c_str());
-    action_card_add_script_field_variables(req, p.options);
+    action_card_add_script_field_variables(req, script_fields);
   }
   ha_action_send(req);
 }

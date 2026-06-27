@@ -339,9 +339,11 @@ def firmware_action_card_script_fields_errors(firmware_dir: Path, root: Path) ->
 
     if "script_fields" not in text:
         return errors
-    if "req.variables.init(script_field_count)" not in text:
+    if "std::vector<ActionCardScriptField> script_fields" not in text:
+        errors.append(f"{rel}: keep parsed script field strings alive until the action is sent")
+    if "req.variables.init(script_fields.size())" not in text:
         errors.append(f"{rel}: initialize script field variables separately from service data")
-    if "ha_action_add_variable(req, key.c_str(), value.c_str())" not in text:
+    if "ha_action_add_variable(req, field.key.c_str(), field.value.c_str())" not in text:
         errors.append(f"{rel}: send script fields through Home Assistant action variables")
     if "req.data_template.init(1)" not in text or 'ha_action_add_data_template(req, "variables"' not in text:
         errors.append(f"{rel}: send script fields in the script.turn_on variables service payload")
@@ -2555,6 +2557,7 @@ def run_self_test() -> int:
         "  ha_action_begin(req, p.sensor.c_str(), false, 1 + script_field_count);\n"
         "}\n",
         (
+            "keep parsed script field strings alive",
             "initialize script field variables separately",
             "send script fields through Home Assistant action variables",
             "do not send script fields as top-level",
@@ -2567,23 +2570,28 @@ def run_self_test() -> int:
         "  ha_action_add_variable(req, key.c_str(), value.c_str());\n"
         "}\n"
         "inline void send_action_card_action(const ParsedCfg &p) {\n"
-        "  size_t script_field_count = action_card_script_field_count(p.options);\n"
+        "  std::vector<ActionCardScriptField> script_fields = action_card_script_fields(p.options);\n"
         "  ha_action_begin(req, p.sensor.c_str(), false, 1);\n"
-        "  req.variables.init(script_field_count);\n"
+        "  req.variables.init(script_fields.size());\n"
         "}\n",
-        ("send script fields in the script.turn_on variables service payload",),
+        (
+            "send script fields in the script.turn_on variables service payload",
+            "send script fields through Home Assistant action variables",
+        ),
     )
     expect_action_card_script_fields_errors(
         "script fields sent in variables payload",
         "inline void action_card_add_script_field_variables(esphome::api::HomeassistantActionRequest &req) {\n"
         "  std::string fields = cfg_option_value(options, \"script_fields\");\n"
-        "  ha_action_add_variable(req, key.c_str(), value.c_str());\n"
+        "  for (const auto &field : fields) {\n"
+        "    ha_action_add_variable(req, field.key.c_str(), field.value.c_str());\n"
+        "  }\n"
         "}\n"
         "inline void send_action_card_action(const ParsedCfg &p) {\n"
-        "  size_t script_field_count = action_card_script_field_count(p.options);\n"
+        "  std::vector<ActionCardScriptField> script_fields = action_card_script_fields(p.options);\n"
         "  ha_action_begin(req, p.sensor.c_str(), false, 1);\n"
         "  req.data_template.init(1);\n"
-        "  req.variables.init(script_field_count);\n"
+        "  req.variables.init(script_fields.size());\n"
         "  ha_action_add_data_template(req, \"variables\", script_fields_template.c_str());\n"
         "}\n",
         (),
