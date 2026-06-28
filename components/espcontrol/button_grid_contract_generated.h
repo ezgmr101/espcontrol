@@ -9,6 +9,7 @@ constexpr const char *CARD_CONTRACT_OPTION_SELECT_ACTION = "input_select.select_
 inline const char *const CARD_CONTRACT_OPTION_SELECT_ACTIONS[] = {"input_select.select_option", "select.select_option"};
 inline const char *const CARD_CONTRACT_BRIGHTNESS_SLIDER_TYPES[] = {"slider", "light_brightness", "fan_speed"};
 inline const char *const CARD_CONTRACT_COVER_MODES[] = {"modal", "", "tilt", "toggle", "open", "close", "stop", "set_position"};
+inline const char *const CARD_CONTRACT_COVER_CONTROL_TABS[] = {"position", "controls", "tilt"};
 inline const char *const CARD_CONTRACT_GARAGE_MODES[] = {"", "open", "close"};
 inline const char *const CARD_CONTRACT_GARAGE_LABEL_DISPLAY_MODES[] = {"label", "status"};
 inline const char *const CARD_CONTRACT_INTERNAL_MODES[] = {"switch", "push"};
@@ -79,6 +80,7 @@ constexpr const char *CARD_CONTRACT_OPTION_NAME_VOLUME_MAX = "volume_max";
 constexpr const char *CARD_CONTRACT_OPTION_NAME_WEATHER_MODE = "weather_mode";
 constexpr const char *CARD_CONTRACT_OPTION_NAME_WEBHOOK_HEADERS = "webhook_headers";
 constexpr const char *CARD_CONTRACT_GARAGE_LABEL_DISPLAY_DEFAULT = "label";
+constexpr const char *CARD_CONTRACT_COVER_CONTROL_TABS_DEFAULT = "position|controls|tilt";
 constexpr const char *CARD_CONTRACT_MEDIA_DEFAULT_MODE = "play_pause";
 constexpr size_t CARD_CONTRACT_ALARM_MAX_VISIBLE_ACTIONS = 3;
 constexpr const char *CARD_CONTRACT_ALARM_ICON_DISPLAY_DEFAULT = "status";
@@ -109,6 +111,11 @@ inline bool card_contract_is_option_select_action(const std::string &action) {
 inline bool card_contract_cover_mode_valid(const std::string &mode) {
   return card_contract_string_in(mode, CARD_CONTRACT_COVER_MODES,
     sizeof(CARD_CONTRACT_COVER_MODES) / sizeof(CARD_CONTRACT_COVER_MODES[0]));
+}
+
+inline bool card_contract_cover_control_tab_valid(const std::string &tab) {
+  return card_contract_string_in(tab, CARD_CONTRACT_COVER_CONTROL_TABS,
+    sizeof(CARD_CONTRACT_COVER_CONTROL_TABS) / sizeof(CARD_CONTRACT_COVER_CONTROL_TABS[0]));
 }
 
 inline bool card_contract_garage_mode_valid(const std::string &mode) {

@@ -538,6 +538,11 @@ var CARD_CONTRACT_CARDS = {
         "name": "cover_tabs",
         "label": "Visible Tabs",
         "kind": "text",
+        "values": [
+          "position",
+          "controls",
+          "tilt"
+        ],
         "defaultValue": "position|controls|tilt"
       }
     ],
