@@ -106,6 +106,12 @@ esphome:
     build_src_flags:
       - "-Wno-literal-suffix"
   on_boot:
+      - priority: 850
+      then:
+        - logger.log: Initializing display backlight
+        - lambda: |-
+              id(display_backlight_i2c).write_byte(0x95, 0x11);
+              id(display_backlight_i2c).write_byte(0x95, 0x17);
     - priority: 260
       then:
         - if:
@@ -220,7 +226,7 @@ esp_ldo:
 # ---------------------------------------------------------------------------
 output:
   - platform: ledc
-    pin: GPIO23
+    pin: GPIO25
     id: gpio_backlight_pwm
 
 light:
@@ -232,6 +238,11 @@ light:
     restore_mode: RESTORE_DEFAULT_ON
     default_transition_length: 0s
     gamma_correct: 1.0
+    on_state: 
+      - delay: 1ms
+      - lambda: |-
+          uint8_t brightness = (uint8_t)(id(backlight).current_values.get_brightness() * 255.0f);
+          id(display_backlight_i2c).write_byte(0x96, brightness);
     on_turn_on:
       then:
         - if:
@@ -283,15 +294,17 @@ i2c:
     sda_pullup_enabled: False
     scl_pullup_enabled: False
 
+i2c_device:
+  - address: 0x45
+    id: display_backlight_i2c
+
 touchscreen:
-  - platform: gsl3680
-    id: my_touchscreen
-    reset_pin: GPIO22
-    interrupt_pin: GPIO21
-    transform:
-      swap_xy: false
-      mirror_x: true
-      mirror_y: false
+   - platform: gt911
+     id: touchscreen_
+     transform:
+     swap_xy: true
+     mirror_y: true
+     mirror_x: false
     on_touch:
       - script.execute: screensaver_wake
 
@@ -301,10 +314,8 @@ touchscreen:
 display:
   - platform: mipi_dsi
     id: my_display
-    model: JC8012P4A1
+    model: WAVESHARE-10.1-DSI-TOUCH-A
     color_order: RGB
-    reset_pin:
-      number: GPIO27
     update_interval: never
     auto_clear_enabled: false
     dimensions:
