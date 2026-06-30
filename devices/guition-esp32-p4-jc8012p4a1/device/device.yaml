@@ -299,12 +299,12 @@ i2c_device:
     id: display_backlight_i2c
 
 touchscreen:
-   - platform: gt911
-     id: touchscreen_
-     transform:
-     swap_xy: true
-     mirror_y: true
-     mirror_x: false
+  - platform: gt911
+    id: touchscreen_
+    transform:
+    swap_xy: true
+    mirror_y: true
+    mirror_x: false
     on_touch:
       - script.execute: screensaver_wake
 
