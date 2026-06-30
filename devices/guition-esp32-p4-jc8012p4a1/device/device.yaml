@@ -18,8 +18,7 @@ esp32:
   variant: esp32p4
   flash_size: 16MB
   cpu_frequency: 360MHZ
-  engineering_sample: true
-  compiler_optimization: PERF  
+  engineering_sample: true 
   framework:
     type: esp-idf
     # stick to recommended version, currently 5.5.4, 55.03.39 with tool-esptoolpy 5.3.0. No issues
@@ -28,6 +27,7 @@ esp32:
     # incompletely in ESPHome containers and then fail while creating .bin files.
     #platform_version: 55.03.37
     advanced:
+      compiler_optimization: PERF   
       enable_idf_experimental_features: true
       execute_from_psram: true
       disable_vfs_support_termios: false
