@@ -330,6 +330,7 @@ display:
 # ---------------------------------------------------------------------------
 lvgl:
   id: main_lvgl
+  buffer_size: 100%
   displays: my_display
   rotation: 90
   byte_order: little_endian
