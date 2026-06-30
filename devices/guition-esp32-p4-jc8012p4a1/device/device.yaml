@@ -68,9 +68,6 @@ external_components:
       path: components
     components: [espcontrol, web_server_idf, artwork_image, gsl3680]
     refresh: 1s
-  - source: github://pr#16362
-    components: [lvgl]
-    refresh: 1h
 
 espcontrol:
 
