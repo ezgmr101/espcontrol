@@ -300,7 +300,7 @@ i2c_device:
 
 touchscreen:
   - platform: gt911
-    id: touchscreen_
+    id: my_touchscreen
     transform:
       swap_xy: true
       mirror_y: true
