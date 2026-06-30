@@ -106,7 +106,7 @@ esphome:
     build_src_flags:
       - "-Wno-literal-suffix"
   on_boot:
-      - priority: 850
+    - priority: 850
       then:
         - logger.log: Initializing display backlight
         - lambda: |-
