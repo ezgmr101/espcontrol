@@ -67,6 +67,9 @@ external_components:
       path: components
     components: [espcontrol, web_server_idf, artwork_image, gsl3680]
     refresh: 1s
+  - source: github://pr#16362
+    components: [lvgl]
+    refresh: 1h
 
 espcontrol:
 
@@ -103,7 +106,10 @@ esphome:
       - "-DESPCONTROL_JC8012P4A1_GSL3680_WAKE_TAP_20260625=1"
       # Rebuild marker for restoring native display-space GSL3680 touch scaling.
       - "-DESPCONTROL_JC8012P4A1_GSL3680_TOUCH_SCALE_20260626=1"
-      - "-DLV_USE_PERF_MONITOR"
+      - -ULV_USE_OBSERVER
+      - -DLV_USE_OBSERVER=1
+      - -DLV_USE_SYSMON=1
+      - -DLV_USE_PERF_MONITOR=1
     build_src_flags:
       - "-Wno-literal-suffix"
   on_boot:
